@@ -68,20 +68,20 @@
 
     <!-- EARN -->
     <section id="earn" class="section">
-      <h2>Three ways to earn</h2>
-      <p class="section-sub">All rewards credit the same balance.</p>
+      <h2 class="reveal">Three ways to earn</h2>
+      <p class="section-sub reveal delay-1">All rewards credit the same balance.</p>
       <div class="cards">
-        <article class="card">
+        <article class="card reveal delay-1">
           <div class="card-icon">🔗</div>
           <h3>Referrals</h3>
           <p>Get your unique link. When someone starts the bot with it, you earn automatically.</p>
         </article>
-        <article class="card">
+        <article class="card reveal delay-2">
           <div class="card-icon">📋</div>
           <h3>Tasks</h3>
           <p>Optional jobs posted by admins — join a channel, submit proof, get paid when approved. Some join tasks auto-verify instantly.</p>
         </article>
-        <article class="card">
+        <article class="card reveal delay-3">
           <div class="card-icon">🎁</div>
           <h3>Daily reward</h3>
           <p>Claim a fixed bonus once every 24 hours. No referral or task required.</p>
@@ -91,30 +91,30 @@
 
     <!-- HOW -->
     <section id="how" class="section section-alt">
-      <h2>How it works</h2>
+      <h2 class="reveal">How it works</h2>
       <ol class="steps">
-        <li>
+        <li class="reveal delay-1">
           <span class="step-num">1</span>
           <div>
             <h3>Open the bot</h3>
             <p>Tap <a href="https://t.me/payfriend1Bot" target="_blank" rel="noopener">@payfriend1Bot</a> and press Start. Join the required channels when asked.</p>
           </div>
         </li>
-        <li>
+        <li class="reveal delay-2">
           <span class="step-num">2</span>
           <div>
             <h3>Pick your region</h3>
             <p>Nigeria sees ₦. Nepal / Other see amounts converted to $ for display only.</p>
           </div>
         </li>
-        <li>
+        <li class="reveal delay-3">
           <span class="step-num">3</span>
           <div>
             <h3>Earn</h3>
             <p>Share your referral link, do tasks, and claim the daily reward from the menu.</p>
           </div>
         </li>
-        <li>
+        <li class="reveal delay-4">
           <span class="step-num">4</span>
           <div>
             <h3>Withdraw</h3>
@@ -126,21 +126,21 @@
 
     <!-- WITHDRAW -->
     <section id="withdraw" class="section">
-      <h2>Withdrawals</h2>
+      <h2 class="reveal">Withdrawals</h2>
       <div class="split">
-        <div>
+        <div class="reveal delay-1">
           <p>Payouts go to <strong>gWallet</strong>. Create an account, copy your ID, and paste it in the bot when you withdraw.</p>
           <ul class="checklist">
             <li>Minimum balance required before requesting</li>
             <li>Admin marks paid after sending funds</li>
             <li>Live activity in the public payout group</li>
           </ul>
-          <div class="hero-cta" style="margin-top:1.25rem">
+          <div class="hero-cta" style="margin-top:1.25rem; justify-content:flex-start;">
             <a class="btn btn-primary" href="https://gwallet-web.netlify.app/" target="_blank" rel="noopener">Open gWallet</a>
             <a class="btn btn-ghost" href="https://t.me/payfriend1" target="_blank" rel="noopener">Watch payouts</a>
           </div>
         </div>
-        <div class="panel">
+        <div class="panel reveal delay-2">
           <div class="panel-title">In the bot</div>
           <div class="panel-row"><span>💵 Withdraw</span><span>Request payout</span></div>
           <div class="panel-row"><span>🌀 Set gWallet</span><span>Save your ID</span></div>
@@ -152,21 +152,21 @@
 
     <!-- FAQ -->
     <section id="faq" class="section section-alt">
-      <h2>FAQ</h2>
+      <h2 class="reveal">FAQ</h2>
       <div class="faq">
-        <details>
+        <details class="reveal delay-1">
           <summary>Is PayFriend free to use?</summary>
           <p>Yes. Using the bot is free. You earn from referrals, tasks, and the daily reward.</p>
         </details>
-        <details>
+        <details class="reveal delay-2">
           <summary>Do I have to complete tasks?</summary>
           <p>No. Tasks are optional. You can earn from referrals and the daily reward only.</p>
         </details>
-        <details>
+        <details class="reveal delay-3">
           <summary>How do withdrawals work?</summary>
           <p>Reach the minimum balance, tap Withdraw, enter your gWallet ID. An admin pays you and marks the request as paid in the bot.</p>
         </details>
-        <details>
+        <details class="reveal delay-4">
           <summary>Where can I get help?</summary>
           <p>Use Support in the bot menu or join the <a href="https://t.me/everyonecanjoin12" target="_blank" rel="noopener">support group</a>.</p>
         </details>
@@ -174,7 +174,7 @@
     </section>
 
     <!-- CTA -->
-    <section class="cta-band">
+    <section class="cta-band reveal">
       <h2>Ready to start earning?</h2>
       <p>Open PayFriend on Telegram and claim your first rewards.</p>
       <a class="btn btn-primary btn-lg" href="https://t.me/payfriend1Bot" target="_blank" rel="noopener">
@@ -196,5 +196,21 @@
     <p class="muted">Dev: @maxxking12 · @MrGranxy · Powered by @createxyourownbot</p>
     <p class="muted small">This site is informational. All earning and payouts happen inside the Telegram bot. Not a bank or licensed payment processor.</p>
   </footer>
+
+  <script>
+    // Scroll-reveal animations
+    const reveals = document.querySelectorAll(".reveal");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+    );
+    reveals.forEach((el) => observer.observe(el));
+  </script>
 </body>
 </html>
