@@ -931,75 +931,122 @@
       }
     }
 
-    // ========== GOOGLE LOGIN (FIXED: uses redirect, not popup) ==========
-    // signInWithPopup relies on third-party cookies and a popup window
-    // successfully communicating back to the opening tab. This breaks in a lot
-    // of mobile browsers and in-app browsers (Telegram, Instagram, etc.),
-    // which shows up as "it logs me into Google but then just sends me back
-    // to the Google login screen" — the popup result never reaches the app.
-    // signInWithRedirect avoids that by fully navigating away and back.
-    function loginWithGoogle() {
+    // ========== GOOGLE LOGIN (FIXED: hybrid popup + redirect fallback) ==========
+    // Different browsers break in different ways:
+    //  - signInWithPopup fails in in-app browsers (Telegram, Instagram, etc.)
+    //    and when third-party cookies/popups are blocked.
+    //  - signInWithRedirect relies on Firebase storing session state that
+    //    survives the trip to accounts.google.com and back, on a DIFFERENT
+    //    domain (payfriend-3af18.firebaseapp.com) than the app itself. Some
+    //    browsers (Safari cross-site tracking protection, private/incognito
+    //    mode, some Android browsers) block that storage — which shows up as
+    //    "it says Signing you in... then just dumps me back on login" with
+    //    no visible error, because Firebase silently finds no result.
+    // Fix: try the popup first (works for the majority of normal browsers).
+    // Only fall back to redirect if the popup itself fails to open/complete
+    // for an environment-related reason.
+    async function loginWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      // Disable both Google buttons and show a clear pending state,
-      // since the page is about to navigate away to Google.
+      setGoogleButtonsState(true, 'SIGNING IN...');
+      try {
+        const result = await auth.signInWithPopup(provider);
+        await ensureUserProfile(result.user);
+        // onAuthStateChanged will pick up the signed-in user from here.
+      } catch (e) {
+        console.error('Google popup sign-in error:', e);
+        const fallbackCodes = [
+          'auth/popup-blocked',
+          'auth/popup-closed-by-user',
+          'auth/cancelled-popup-request',
+          'auth/operation-not-supported-in-this-environment'
+        ];
+        if (fallbackCodes.includes(e.code)) {
+          // Popup didn't work in this environment — fall back to a full
+          // page redirect instead, which is more compatible.
+          setGoogleButtonsState(true, 'REDIRECTING TO GOOGLE...');
+          try {
+            await auth.signInWithRedirect(provider);
+            // Page will navigate away now; nothing more to do here.
+          } catch (redirectErr) {
+            console.error('Redirect fallback also failed:', redirectErr);
+            setGoogleButtonsState(false);
+            showToast('Google sign-in is not working in this browser. Try opening the link in Chrome or Safari directly.');
+          }
+        } else {
+          setGoogleButtonsState(false);
+          let msg = 'Google sign-in failed. Please try again.';
+          if (e.code === 'auth/unauthorized-domain') {
+            msg = 'This domain is not authorized for Google sign-in yet.';
+          } else if (e.code === 'auth/account-exists-with-different-credential') {
+            msg = 'An account already exists with this email using a different sign-in method.';
+          } else if (e.code === 'auth/network-request-failed') {
+            msg = 'Network error. Check your internet connection.';
+          }
+          showToast(msg);
+        }
+      }
+    }
+
+    function setGoogleButtonsState(disabled, text) {
       ['googleBtnLogin', 'googleBtnReg'].forEach(id => {
         const b = document.getElementById(id);
-        if (b) {
-          b.disabled = true;
-          b.textContent = 'REDIRECTING TO GOOGLE...';
-        }
-      });
-      auth.signInWithRedirect(provider).catch((e) => {
-        console.error('Redirect sign-in failed to start:', e);
-        resetAuthButtons();
-        showToast('Could not start Google sign-in: ' + (e.message || 'unknown error'));
+        if (!b) return;
+        b.disabled = disabled;
+        b.innerHTML = disabled
+          ? text
+          : '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18"> CONTINUE WITH GOOGLE';
       });
     }
 
+    // Creates the Firestore profile doc for a Google user on their first
+    // sign-in. Shared by both the popup path and the redirect-return path.
+    async function ensureUserProfile(user) {
+      const doc = await db.collection('users').doc(user.uid).get();
+      if (doc.exists) return;
+
+      let baseUsername = (user.displayName || 'user')
+        .replace(/\s+/g, '')
+        .toLowerCase()
+        .substring(0, 12) || 'user';
+
+      let finalUsername = baseUsername;
+      let i = 1;
+      while (true) {
+        const check = await db.collection('users')
+          .where('username', '==', finalUsername)
+          .limit(1)
+          .get();
+        if (check.empty) break;
+        finalUsername = baseUsername + i;
+        i++;
+      }
+
+      await db.collection('users').doc(user.uid).set({
+        uid: user.uid,
+        username: finalUsername,
+        email: user.email,
+        balance: 0,
+        earned: 0,
+        referrals: 0,
+        tasksDone: [],
+        lastDaily: 0,
+        isAdmin: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        referredBy: null,
+        photoURL: user.photoURL || null
+      });
+
+      showToast('Welcome ' + finalUsername + '!');
+    }
+
     // Handles the return trip after signInWithRedirect sends the user back
-    // from Google. Must run on every page load, before we decide what to show.
+    // from Google (only relevant when the popup fallback above was used).
+    // Must run on every page load, before we decide what to show.
     async function handleGoogleRedirectResult() {
       try {
         const result = await auth.getRedirectResult();
         if (result && result.user) {
-          const user = result.user;
-          const doc = await db.collection('users').doc(user.uid).get();
-
-          if (!doc.exists) {
-            let baseUsername = (user.displayName || 'user')
-              .replace(/\s+/g, '')
-              .toLowerCase()
-              .substring(0, 12) || 'user';
-
-            let finalUsername = baseUsername;
-            let i = 1;
-            while (true) {
-              const check = await db.collection('users')
-                .where('username', '==', finalUsername)
-                .limit(1)
-                .get();
-              if (check.empty) break;
-              finalUsername = baseUsername + i;
-              i++;
-            }
-
-            await db.collection('users').doc(user.uid).set({
-              uid: user.uid,
-              username: finalUsername,
-              email: user.email,
-              balance: 0,
-              earned: 0,
-              referrals: 0,
-              tasksDone: [],
-              lastDaily: 0,
-              isAdmin: false,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-              referredBy: null,
-              photoURL: user.photoURL || null
-            });
-
-            showToast('Welcome ' + finalUsername + '!');
-          }
+          await ensureUserProfile(result.user);
         }
       } catch (e) {
         console.error('Google redirect result error:', e);
@@ -1014,6 +1061,7 @@
         showError(document.getElementById('loginError'), msg);
       } finally {
         redirectCheckDone = true;
+        setGoogleButtonsState(false);
         resetAuthButtons();
         // onAuthStateChanged fires independently (often BEFORE this async
         // function finishes) and drives the actual login/enterApp flow.
