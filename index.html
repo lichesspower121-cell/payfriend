@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PayFriend • Earn • Tasks • Rewards</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  
+ 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
-
   <style>
     :root {
       --bg: #050505;
@@ -474,7 +473,6 @@
   </style>
 </head>
 <body>
-
   <!-- AUTH -->
   <div class="auth-wrap" id="authWrap">
     <div class="auth-card" id="loginCard">
@@ -490,7 +488,6 @@
       <div class="auth-error" id="loginError"></div>
       <div class="auth-switch">Don't have an account? <span onclick="showRegister()">Create Account</span></div>
     </div>
-
     <div class="auth-card hidden" id="registerCard">
       <div class="auth-logo">
         <div class="auth-logo-icon">💰</div>
@@ -521,7 +518,6 @@
         <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
       </div>
     </div>
-
     <div class="container">
       <div class="balance-card">
         <div class="balance-label">Your Balance</div>
@@ -541,7 +537,6 @@
           </div>
         </div>
       </div>
-
       <div class="nav-tabs" id="navTabs">
         <button class="nav-tab active" data-tab="home" onclick="switchTab('home')">HOME</button>
         <button class="nav-tab" data-tab="tasks" onclick="switchTab('tasks')">TASKS</button>
@@ -728,7 +723,6 @@
       appId: "1:480389500757:web:98d00e95c35eb7083769dc",
       measurementId: "G-LPVT73ZMBM"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -738,8 +732,7 @@
     const DAILY_REWARD = 200;
     const REF_REWARD = 15;
     const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-    const ADMIN_USERNAMES = ["admin"];   // ← Username "admin" is Admin
-
+    const ADMIN_USERNAMES = ["admin"];
     let currentUser = null;
     let userData = null;
     let pendingTaskId = null;
@@ -750,7 +743,13 @@
       document.getElementById('loginCard').classList.remove('hidden');
       document.getElementById('registerCard').classList.add('hidden');
       document.getElementById('loginError').style.display = 'none';
+
+      // Reset login button (fixes stuck "LOGGING IN...")
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = false;
+      btn.textContent = 'LOGIN';
     }
+
     function showRegister() {
       document.getElementById('registerCard').classList.remove('hidden');
       document.getElementById('loginCard').classList.add('hidden');
@@ -760,15 +759,17 @@
     // ========== REGISTER ==========
     async function doRegister() {
       const username = document.getElementById('regUsername').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
+      const email = document.getElementById('regEmail').value.trim().toLowerCase();
       const pass = document.getElementById('regPass').value;
       const pass2 = document.getElementById('regPass2').value;
       const refCode = document.getElementById('regRef').value.trim().toLowerCase();
       const err = document.getElementById('regError');
       const btn = document.getElementById('regBtn');
 
+      err.style.display = 'none';
+
       if (!username || username.length < 3) return showError(err, 'Username min 3 characters');
-      if (!email) return showError(err, 'Email is required');
+      if (!email || !email.includes('@')) return showError(err, 'Valid email is required');
       if (pass.length < 6) return showError(err, 'Password min 6 characters');
       if (pass !== pass2) return showError(err, 'Passwords do not match');
 
@@ -776,20 +777,18 @@
       btn.textContent = 'CREATING...';
 
       try {
-        // Check if username already exists
-        const usernameSnap = await db.collection('users').where('username', '==', username.toLowerCase()).get();
+        const usernameSnap = await db.collection('users')
+          .where('username', '==', username.toLowerCase())
+          .limit(1)
+          .get();
+
         if (!usernameSnap.empty) {
-          showError(err, 'Username already taken');
-          btn.disabled = false;
-          btn.textContent = 'CREATE ACCOUNT';
-          return;
+          throw new Error('Username already taken');
         }
 
-        // Create Auth user
         const cred = await auth.createUserWithEmailAndPassword(email, pass);
         const uid = cred.user.uid;
 
-        // Create user document
         const newUser = {
           uid,
           username: username.toLowerCase(),
@@ -804,9 +803,12 @@
           referredBy: null
         };
 
-        // Handle referral
         if (refCode) {
-          const refSnap = await db.collection('users').where('username', '==', refCode).limit(1).get();
+          const refSnap = await db.collection('users')
+            .where('username', '==', refCode)
+            .limit(1)
+            .get();
+
           if (!refSnap.empty) {
             const referrer = refSnap.docs[0];
             newUser.referredBy = referrer.id;
@@ -822,7 +824,15 @@
         showToast('Account created! Welcome ' + username);
 
       } catch (e) {
-        showError(err, e.message);
+        console.error(e);
+        let message = e.message;
+        if (e.code === 'auth/email-already-in-use') message = 'This email is already registered';
+        else if (e.code === 'auth/invalid-email') message = 'Invalid email address';
+        else if (e.code === 'auth/weak-password') message = 'Password is too weak';
+        else if (e.code === 'auth/operation-not-allowed') message = 'Email/Password not enabled in Firebase';
+        else if (e.message.includes('Username already taken')) message = 'Username already taken';
+
+        showError(err, message);
         btn.disabled = false;
         btn.textContent = 'CREATE ACCOUNT';
       }
@@ -835,6 +845,8 @@
       const err = document.getElementById('loginError');
       const btn = document.getElementById('loginBtn');
 
+      err.style.display = 'none';
+
       if (!email || !pass) return showError(err, 'Enter email and password');
 
       btn.disabled = true;
@@ -842,7 +854,11 @@
 
       try {
         await auth.signInWithEmailAndPassword(email, pass);
+        // Reset button just in case
+        btn.disabled = false;
+        btn.textContent = 'LOGIN';
       } catch (e) {
+        console.error(e);
         showError(err, 'Wrong email or password');
         btn.disabled = false;
         btn.textContent = 'LOGIN';
@@ -860,7 +876,6 @@
         const doc = await db.collection('users').doc(user.uid).get();
         if (doc.exists) {
           userData = { id: doc.id, ...doc.data() };
-          // Force admin if username is "admin"
           if (ADMIN_USERNAMES.includes(userData.username)) {
             userData.isAdmin = true;
           }
@@ -905,13 +920,11 @@
 
     async function refreshUI() {
       if (!userData) return;
-
       const doc = await db.collection('users').doc(currentUser.uid).get();
       userData = { id: doc.id, ...doc.data() };
       if (ADMIN_USERNAMES.includes(userData.username)) {
         userData.isAdmin = true;
       }
-
       document.getElementById('balanceDisplay').textContent = '₦' + fmt(userData.balance);
       document.getElementById('earnedDisplay').textContent = '₦' + fmt(userData.earned);
       document.getElementById('refsDisplay').textContent = userData.referrals || 0;
@@ -948,7 +961,6 @@
       document.getElementById('tab-' + tab).classList.add('active');
       const btn = document.querySelector(`.nav-tab[data-tab="${tab}"]`);
       if (btn) btn.classList.add('active');
-
       if (tab === 'admin') renderAdmin();
       if (tab === 'tasks') { renderTasks(); renderMySubmissions(); }
       if (tab === 'withdraw') renderMyWithdrawals();
@@ -961,7 +973,6 @@
       if (userData.lastDaily && (now - userData.lastDaily) < DAILY_COOLDOWN_MS) {
         return showToast('Daily reward already claimed');
       }
-
       try {
         await db.collection('users').doc(currentUser.uid).update({
           balance: firebase.firestore.FieldValue.increment(DAILY_REWARD),
@@ -979,11 +990,9 @@
     async function renderTasks() {
       const list = document.getElementById('tasksList');
       list.innerHTML = '<div class="loading">Loading tasks...</div>';
-
       try {
         const snap = await db.collection('tasks').where('active', '==', true).get();
         const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
         const subsSnap = await db.collection('submissions')
           .where('userId', '==', currentUser.uid)
           .get();
@@ -997,7 +1006,6 @@
         list.innerHTML = tasks.map(t => {
           const isDone = (userData.tasksDone || []).includes(t.id);
           const pendingSub = mySubs.find(s => s.taskId === t.id && s.status === 'pending');
-
           let btnHtml = '';
           if (isDone) {
             btnHtml = `<button class="task-btn" disabled>✓ COMPLETED</button>`;
@@ -1006,7 +1014,6 @@
           } else {
             btnHtml = `<button class="task-btn" onclick="openSSModal('${t.id}', '${t.title}', ${t.reward})">DO TASK + UPLOAD SCREENSHOT</button>`;
           }
-
           return `
             <div class="task-item">
               <div class="task-top">
@@ -1063,11 +1070,9 @@
       if (!pendingTaskId || !pendingScreenshotData) {
         return showToast('Please select a screenshot first');
       }
-
       try {
         const taskDoc = await db.collection('tasks').doc(pendingTaskId).get();
         const reward = taskDoc.exists ? taskDoc.data().reward : 0;
-
         await db.collection('submissions').add({
           userId: currentUser.uid,
           username: userData.username,
@@ -1078,7 +1083,6 @@
           status: 'pending',
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-
         closeSSModal();
         showToast('✅ Screenshot submitted!\nAdmin will review soon.');
         renderTasks();
@@ -1096,12 +1100,10 @@
           .orderBy('createdAt', 'desc')
           .limit(20)
           .get();
-
         if (snap.empty) {
           box.innerHTML = '<p style="color:#666;font-size:12px;">No submissions yet</p>';
           return;
         }
-
         box.innerHTML = snap.docs.map(d => {
           const s = d.data();
           return `
@@ -1124,12 +1126,10 @@
       const box = document.getElementById('leaderboardList');
       try {
         const snap = await db.collection('users').orderBy('earned', 'desc').limit(50).get();
-
         if (snap.empty) {
           box.innerHTML = '<p style="color:#666;">No users yet</p>';
           return;
         }
-
         box.innerHTML = snap.docs.map((d, i) => {
           const u = d.data();
           let rankClass = 'normal';
@@ -1137,7 +1137,6 @@
           else if (i === 1) rankClass = 'silver';
           else if (i === 2) rankClass = 'bronze';
           const isMe = d.id === currentUser.uid;
-
           return `
             <div class="lb-row" style="${isMe ? 'background:rgba(34,197,94,0.08);border-radius:10px;padding:10px 8px;' : ''}">
               <div class="lb-user">
@@ -1166,16 +1165,13 @@
     async function requestWithdraw() {
       const amount = parseFloat(document.getElementById('wdAmount').value);
       const gwallet = document.getElementById('wdGwallet').value.trim();
-
       if (!amount || amount < MIN_WITHDRAW) return showToast('Minimum withdrawal is ₦' + MIN_WITHDRAW);
       if (!gwallet || gwallet.length < 8) return showToast('Enter a valid GWallet ID');
       if (userData.balance < amount) return showToast('Insufficient balance');
-
       try {
         await db.collection('users').doc(currentUser.uid).update({
           balance: firebase.firestore.FieldValue.increment(-amount)
         });
-
         await db.collection('withdrawals').add({
           userId: currentUser.uid,
           username: userData.username,
@@ -1184,7 +1180,6 @@
           status: 'pending',
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-
         document.getElementById('wdAmount').value = '';
         document.getElementById('wdGwallet').value = '';
         showToast('✅ Withdrawal requested!');
@@ -1202,12 +1197,10 @@
           .orderBy('createdAt', 'desc')
           .limit(20)
           .get();
-
         if (snap.empty) {
           box.innerHTML = '<p style="color:#666;font-size:12px;">No withdrawals yet</p>';
           return;
         }
-
         box.innerHTML = snap.docs.map(d => {
           const w = d.data();
           return `
@@ -1231,7 +1224,6 @@
       const wdSnap = await db.collection('withdrawals').where('status', '==', 'pending').get();
       const subSnap = await db.collection('submissions').where('status', '==', 'pending').get();
       const paidSnap = await db.collection('withdrawals').where('status', '==', 'paid').get();
-
       let totalPaid = 0;
       paidSnap.forEach(d => totalPaid += d.data().amount || 0);
 
@@ -1240,7 +1232,6 @@
       document.getElementById('adminPendingTasks').textContent = subSnap.size;
       document.getElementById('adminPaid').textContent = '₦' + fmt(totalPaid);
 
-      // Pending submissions
       const subBox = document.getElementById('adminTaskSubs');
       if (subSnap.empty) {
         subBox.innerHTML = '<p style="color:#666;font-size:12px;">No pending screenshots</p>';
@@ -1261,7 +1252,6 @@
         }).join('');
       }
 
-      // Pending withdrawals
       const wdBox = document.getElementById('adminWithdrawals');
       if (wdSnap.empty) {
         wdBox.innerHTML = '<p style="color:#666;font-size:12px;">No pending withdrawals</p>';
@@ -1283,7 +1273,6 @@
         }).join('');
       }
 
-      // Users list
       const uBox = document.getElementById('adminUsersList');
       uBox.innerHTML = usersSnap.docs.map(d => {
         const u = d.data();
@@ -1302,6 +1291,7 @@
       document.getElementById('viewSSImg').src = src;
       document.getElementById('viewSSModal').classList.add('show');
     }
+
     function closeViewSS() {
       document.getElementById('viewSSModal').classList.remove('show');
     }
@@ -1346,9 +1336,7 @@
       const reward = parseFloat(document.getElementById('newTaskReward').value);
       const title = document.getElementById('newTaskTitle').value.trim();
       const desc = document.getElementById('newTaskDesc').value.trim();
-
       if (!reward || !title) return showToast('Fill reward and title');
-
       await db.collection('tasks').add({
         title,
         desc: desc || title,
@@ -1356,7 +1344,6 @@
         active: true,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-
       document.getElementById('newTaskReward').value = '';
       document.getElementById('newTaskTitle').value = '';
       document.getElementById('newTaskDesc').value = '';
