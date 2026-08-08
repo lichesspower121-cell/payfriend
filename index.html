@@ -112,6 +112,7 @@
       gap: 10px;
       font-family: 'Inter', sans-serif;
     }
+    .google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .auth-switch {
       text-align: center;
       margin-top: 18px;
@@ -484,14 +485,29 @@
       color: var(--muted);
       font-family: 'JetBrains Mono', monospace;
     }
+    .full-loading {
+      position: fixed;
+      inset: 0;
+      background: #050505;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      z-index: 500;
+    }
     @media (max-width: 480px) {
       .balance-value { font-size: 28px; }
     }
   </style>
 </head>
 <body>
+  <!-- Shown briefly while we check for a Google redirect result on page load -->
+  <div class="full-loading" id="redirectLoading">Signing you in...</div>
+
   <!-- AUTH -->
-  <div class="auth-wrap" id="authWrap">
+  <div class="auth-wrap hidden" id="authWrap">
     <div class="auth-card" id="loginCard">
       <div class="auth-logo">
         <div class="auth-logo-icon">💰</div>
@@ -503,7 +519,7 @@
       <input class="auth-input" id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
       <button class="auth-btn" id="loginBtn" onclick="doLogin()">LOGIN</button>
       
-      <button class="google-btn" onclick="loginWithGoogle()">
+      <button class="google-btn" id="googleBtnLogin" onclick="loginWithGoogle()">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18">
         CONTINUE WITH GOOGLE
       </button>
@@ -526,7 +542,7 @@
       <input class="auth-input" id="regRef" placeholder="Referral code (optional)">
       <button class="auth-btn" id="regBtn" onclick="doRegister()">CREATE ACCOUNT</button>
 
-      <button class="google-btn" onclick="loginWithGoogle()">
+      <button class="google-btn" id="googleBtnReg" onclick="loginWithGoogle()">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18">
         CONTINUE WITH GOOGLE
       </button>
@@ -767,6 +783,7 @@
     let userData = null;
     let pendingTaskId = null;
     let pendingScreenshotData = null;
+    let redirectCheckDone = false;
 
     // ========== AUTH UI ==========
     function showLogin() {
@@ -783,7 +800,6 @@
       document.getElementById('regError').style.display = 'none';
     }
 
-    // ========== FIX: helper to always restore auth buttons ==========
     function resetAuthButtons() {
       const loginBtn = document.getElementById('loginBtn');
       if (loginBtn) {
@@ -794,6 +810,16 @@
       if (regBtn) {
         regBtn.disabled = false;
         regBtn.textContent = 'CREATE ACCOUNT';
+      }
+      const gLogin = document.getElementById('googleBtnLogin');
+      if (gLogin) {
+        gLogin.disabled = false;
+        gLogin.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18"> CONTINUE WITH GOOGLE';
+      }
+      const gReg = document.getElementById('googleBtnReg');
+      if (gReg) {
+        gReg.disabled = false;
+        gReg.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18"> CONTINUE WITH GOOGLE';
       }
     }
 
@@ -862,8 +888,6 @@
 
         await db.collection('users').doc(uid).set(newUser);
         showToast('Account created! Welcome ' + username);
-        // NOTE: button stays disabled here on purpose — onAuthStateChanged
-        // will fire next and either enter the app or reset the buttons itself.
 
       } catch (e) {
         console.error(e);
@@ -896,8 +920,6 @@
 
       try {
         await auth.signInWithEmailAndPassword(email, pass);
-        // NOTE: button stays disabled here on purpose — onAuthStateChanged
-        // will fire next and either enter the app or reset the buttons itself.
       } catch (e) {
         let message = 'Wrong email or password';
         if (e.code === 'auth/network-request-failed') message = 'Network error. Check your internet.';
@@ -909,59 +931,94 @@
       }
     }
 
-    // ========== GOOGLE LOGIN ==========
-    async function loginWithGoogle() {
+    // ========== GOOGLE LOGIN (FIXED: uses redirect, not popup) ==========
+    // signInWithPopup relies on third-party cookies and a popup window
+    // successfully communicating back to the opening tab. This breaks in a lot
+    // of mobile browsers and in-app browsers (Telegram, Instagram, etc.),
+    // which shows up as "it logs me into Google but then just sends me back
+    // to the Google login screen" — the popup result never reaches the app.
+    // signInWithRedirect avoids that by fully navigating away and back.
+    function loginWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
+      // Disable both Google buttons and show a clear pending state,
+      // since the page is about to navigate away to Google.
+      ['googleBtnLogin', 'googleBtnReg'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) {
+          b.disabled = true;
+          b.textContent = 'REDIRECTING TO GOOGLE...';
+        }
+      });
+      auth.signInWithRedirect(provider).catch((e) => {
+        console.error('Redirect sign-in failed to start:', e);
+        resetAuthButtons();
+        showToast('Could not start Google sign-in: ' + (e.message || 'unknown error'));
+      });
+    }
+
+    // Handles the return trip after signInWithRedirect sends the user back
+    // from Google. Must run on every page load, before we decide what to show.
+    async function handleGoogleRedirectResult() {
       try {
-        const result = await auth.signInWithPopup(provider);
-        const user = result.user;
+        const result = await auth.getRedirectResult();
+        if (result && result.user) {
+          const user = result.user;
+          const doc = await db.collection('users').doc(user.uid).get();
 
-        const doc = await db.collection('users').doc(user.uid).get();
+          if (!doc.exists) {
+            let baseUsername = (user.displayName || 'user')
+              .replace(/\s+/g, '')
+              .toLowerCase()
+              .substring(0, 12) || 'user';
 
-        if (!doc.exists) {
-          let baseUsername = (user.displayName || 'user')
-            .replace(/\s+/g, '')
-            .toLowerCase()
-            .substring(0, 12) || 'user';
+            let finalUsername = baseUsername;
+            let i = 1;
+            while (true) {
+              const check = await db.collection('users')
+                .where('username', '==', finalUsername)
+                .limit(1)
+                .get();
+              if (check.empty) break;
+              finalUsername = baseUsername + i;
+              i++;
+            }
 
-          let finalUsername = baseUsername;
-          let i = 1;
-          while (true) {
-            const check = await db.collection('users')
-              .where('username', '==', finalUsername)
-              .limit(1)
-              .get();
-            if (check.empty) break;
-            finalUsername = baseUsername + i;
-            i++;
+            await db.collection('users').doc(user.uid).set({
+              uid: user.uid,
+              username: finalUsername,
+              email: user.email,
+              balance: 0,
+              earned: 0,
+              referrals: 0,
+              tasksDone: [],
+              lastDaily: 0,
+              isAdmin: false,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              referredBy: null,
+              photoURL: user.photoURL || null
+            });
+
+            showToast('Welcome ' + finalUsername + '!');
           }
-
-          await db.collection('users').doc(user.uid).set({
-            uid: user.uid,
-            username: finalUsername,
-            email: user.email,
-            balance: 0,
-            earned: 0,
-            referrals: 0,
-            tasksDone: [],
-            lastDaily: 0,
-            isAdmin: false,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            referredBy: null,
-            photoURL: user.photoURL || null
-          });
-
-          showToast('Welcome ' + finalUsername + '!');
         }
       } catch (e) {
-        console.error(e);
-        if (e.code === 'auth/popup-closed-by-user') {
-          showToast('Google login cancelled');
+        console.error('Google redirect result error:', e);
+        let msg = 'Google sign-in failed';
+        if (e.code === 'auth/unauthorized-domain') {
+          msg = 'This domain is not authorized for Google sign-in yet.';
+        } else if (e.code === 'auth/account-exists-with-different-credential') {
+          msg = 'An account already exists with this email using a different sign-in method.';
         } else if (e.code === 'auth/network-request-failed') {
-          showToast('Network error. Check your internet.');
-        } else {
-          showToast('Google login failed');
+          msg = 'Network error. Check your internet connection.';
         }
+        showError(document.getElementById('loginError'), msg);
+      } finally {
+        redirectCheckDone = true;
+        resetAuthButtons();
+        // onAuthStateChanged fires independently and drives the actual
+        // login/enterApp flow, so we just make sure the loading screen
+        // is hidden once we've checked for a redirect result.
+        document.getElementById('redirectLoading').style.display = 'none';
       }
     }
 
@@ -969,7 +1026,7 @@
       auth.signOut();
     }
 
-    // ========== AUTH STATE (FIXED) ==========
+    // ========== AUTH STATE ==========
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         currentUser = user;
@@ -983,17 +1040,12 @@
             resetAuthButtons();
             enterApp();
           } else {
-            // Profile doc missing — don't fail silently, tell the user and reset the UI
             console.warn('No profile document found for uid:', user.uid);
             resetAuthButtons();
             showError(document.getElementById('loginError'), 'Account data not found. Please contact support or register again.');
             await auth.signOut();
           }
         } catch (e) {
-          // This is the bug that broke login for many users: a failed Firestore
-          // read (commonly a Security Rules / permissions issue) used to sign
-          // the user back out with zero feedback, leaving the LOGIN button
-          // stuck on "LOGGING IN...". Now we surface the error and reset the UI.
           console.error('Failed to load user profile:', e);
           resetAuthButtons();
           let msg = 'Could not load your account. Please try again.';
@@ -1009,13 +1061,20 @@
         currentUser = null;
         userData = null;
         document.getElementById('app').style.display = 'none';
-        document.getElementById('authWrap').style.display = 'flex';
+        // Only reveal the login screen once we've checked for a pending
+        // Google redirect result, so users don't see a login flash mid-redirect.
+        if (redirectCheckDone) {
+          document.getElementById('authWrap').classList.remove('hidden');
+          document.getElementById('authWrap').style.display = 'flex';
+          document.getElementById('redirectLoading').style.display = 'none';
+        }
         resetAuthButtons();
         showLogin();
       }
     });
 
     function enterApp() {
+      document.getElementById('redirectLoading').style.display = 'none';
       document.getElementById('authWrap').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       document.getElementById('userChip').textContent = '@' + userData.username;
@@ -1476,14 +1535,17 @@
     }
 
     // ========== INIT ==========
-    window.onload = function() {
+    window.addEventListener('DOMContentLoaded', function() {
       const params = new URLSearchParams(location.search);
       const ref = params.get('ref');
       if (ref) {
         document.getElementById('regRef').value = ref;
         showRegister();
       }
-    };
+      // Always check for a pending Google redirect result first, before
+      // showing any auth screen. This is what completes signInWithRedirect.
+      handleGoogleRedirectResult();
+    });
   </script>
 </body>
 </html>
