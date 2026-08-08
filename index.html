@@ -1,4 +1,3 @@
-this is my code
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -96,6 +95,23 @@ this is my code
       font-family: 'JetBrains Mono', monospace;
     }
     .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .google-btn {
+      width: 100%;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      padding: 13px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: 'Inter', sans-serif;
+    }
     .auth-switch {
       text-align: center;
       margin-top: 18px;
@@ -486,9 +502,16 @@ this is my code
       <input class="auth-input" id="loginEmail" type="email" placeholder="Email" autocomplete="email">
       <input class="auth-input" id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
       <button class="auth-btn" id="loginBtn" onclick="doLogin()">LOGIN</button>
+      
+      <button class="google-btn" onclick="loginWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18">
+        CONTINUE WITH GOOGLE
+      </button>
+
       <div class="auth-error" id="loginError"></div>
       <div class="auth-switch">Don't have an account? <span onclick="showRegister()">Create Account</span></div>
     </div>
+
     <div class="auth-card hidden" id="registerCard">
       <div class="auth-logo">
         <div class="auth-logo-icon">💰</div>
@@ -502,10 +525,17 @@ this is my code
       <input class="auth-input" id="regPass2" type="password" placeholder="Confirm password">
       <input class="auth-input" id="regRef" placeholder="Referral code (optional)">
       <button class="auth-btn" id="regBtn" onclick="doRegister()">CREATE ACCOUNT</button>
+
+      <button class="google-btn" onclick="loginWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18">
+        CONTINUE WITH GOOGLE
+      </button>
+
       <div class="auth-error" id="regError"></div>
       <div class="auth-switch">Already have an account? <span onclick="showLogin()">Login</span></div>
     </div>
   </div>
+
   <!-- APP -->
   <div id="app">
     <div class="topbar">
@@ -545,6 +575,7 @@ this is my code
         <button class="nav-tab" data-tab="withdraw" onclick="switchTab('withdraw')">WITHDRAW</button>
         <button class="nav-tab admin-tab hidden" id="adminTabBtn" data-tab="admin" onclick="switchTab('admin')">ADMIN</button>
       </div>
+
       <!-- HOME -->
       <div class="section active" id="tab-home">
         <div class="card">
@@ -570,6 +601,7 @@ this is my code
           </p>
         </div>
       </div>
+
       <!-- TASKS -->
       <div class="section" id="tab-tasks">
         <div class="card">
@@ -584,6 +616,7 @@ this is my code
           <div id="mySubmissions"><div class="loading">Loading...</div></div>
         </div>
       </div>
+
       <!-- REFER -->
       <div class="section" id="tab-refer">
         <div class="card">
@@ -601,6 +634,7 @@ this is my code
           </div>
         </div>
       </div>
+
       <!-- LEADERBOARD -->
       <div class="section" id="tab-leaderboard">
         <div class="card">
@@ -609,6 +643,7 @@ this is my code
           <div id="leaderboardList"><div class="loading">Loading...</div></div>
         </div>
       </div>
+
       <!-- WITHDRAW -->
       <div class="section" id="tab-withdraw">
         <div class="card">
@@ -626,6 +661,7 @@ this is my code
           <div id="myWithdrawals"><div class="loading">Loading...</div></div>
         </div>
       </div>
+
       <!-- ADMIN -->
       <div class="section" id="tab-admin">
         <div class="card">
@@ -669,12 +705,14 @@ this is my code
           <button class="btn btn-blue" onclick="adminCreateTask()">CREATE TASK</button>
         </div>
       </div>
+
       <div class="footer">
         POWERED BY <a href="https://t.me/maxxking12" target="_blank">MAX DEV</a> ·
         <a href="https://t.me/payfriend1" target="_blank">Support Group</a>
       </div>
     </div>
   </div>
+
   <!-- Screenshot Modal -->
   <div class="modal-overlay" id="ssModal">
     <div class="modal">
@@ -692,6 +730,7 @@ this is my code
       <button class="btn btn-outline" onclick="closeSSModal()">CANCEL</button>
     </div>
   </div>
+
   <!-- View Screenshot Modal -->
   <div class="modal-overlay" id="viewSSModal">
     <div class="modal">
@@ -700,7 +739,9 @@ this is my code
       <button class="btn btn-outline" style="margin-top:12px;" onclick="closeViewSS()">CLOSE</button>
     </div>
   </div>
+
   <div class="toast" id="toast"></div>
+
   <script>
     // ========== FIREBASE CONFIG ==========
     const firebaseConfig = {
@@ -715,55 +756,65 @@ this is my code
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+
     // ========== CONSTANTS ==========
     const MIN_WITHDRAW = 1000;
     const DAILY_REWARD = 200;
     const REF_REWARD = 15;
     const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-    const ADMIN_USERNAMES = ["admin"]; // ← Username "admin" is Admin
+    const ADMIN_USERNAMES = ["admin"];
     let currentUser = null;
     let userData = null;
     let pendingTaskId = null;
     let pendingScreenshotData = null;
+
     // ========== AUTH UI ==========
     function showLogin() {
       document.getElementById('loginCard').classList.remove('hidden');
       document.getElementById('registerCard').classList.add('hidden');
       document.getElementById('loginError').style.display = 'none';
+      document.getElementById('regError').style.display = 'none';
     }
+
     function showRegister() {
       document.getElementById('registerCard').classList.remove('hidden');
       document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('loginError').style.display = 'none';
       document.getElementById('regError').style.display = 'none';
     }
+
     // ========== REGISTER ==========
     async function doRegister() {
       const username = document.getElementById('regUsername').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
+      const email = document.getElementById('regEmail').value.trim().toLowerCase();
       const pass = document.getElementById('regPass').value;
       const pass2 = document.getElementById('regPass2').value;
       const refCode = document.getElementById('regRef').value.trim().toLowerCase();
       const err = document.getElementById('regError');
       const btn = document.getElementById('regBtn');
+
+      err.style.display = 'none';
+      err.textContent = '';
+
       if (!username || username.length < 3) return showError(err, 'Username min 3 characters');
-      if (!email) return showError(err, 'Email is required');
+      if (!email || !email.includes('@')) return showError(err, 'Valid email is required');
       if (pass.length < 6) return showError(err, 'Password min 6 characters');
       if (pass !== pass2) return showError(err, 'Passwords do not match');
+
       btn.disabled = true;
       btn.textContent = 'CREATING...';
+
       try {
-        // Check if username already exists
-        const usernameSnap = await db.collection('users').where('username', '==', username.toLowerCase()).get();
-        if (!usernameSnap.empty) {
-          showError(err, 'Username already taken');
-          btn.disabled = false;
-          btn.textContent = 'CREATE ACCOUNT';
-          return;
-        }
-        // Create Auth user
+        const usernameSnap = await db.collection('users')
+          .where('username', '==', username.toLowerCase())
+          .limit(1)
+          .get();
+
+        if (!usernameSnap.empty) throw new Error('Username already taken');
+
         const cred = await auth.createUserWithEmailAndPassword(email, pass);
         const uid = cred.user.uid;
-        // Create user document
+
         const newUser = {
           uid,
           username: username.toLowerCase(),
@@ -777,9 +828,13 @@ this is my code
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           referredBy: null
         };
-        // Handle referral
+
         if (refCode) {
-          const refSnap = await db.collection('users').where('username', '==', refCode).limit(1).get();
+          const refSnap = await db.collection('users')
+            .where('username', '==', refCode)
+            .limit(1)
+            .get();
+
           if (!refSnap.empty) {
             const referrer = refSnap.docs[0];
             newUser.referredBy = referrer.id;
@@ -790,47 +845,127 @@ this is my code
             });
           }
         }
+
         await db.collection('users').doc(uid).set(newUser);
         showToast('Account created! Welcome ' + username);
+
       } catch (e) {
-        showError(err, e.message);
+        console.error(e);
+        let message = e.message;
+        if (e.code === 'auth/email-already-in-use') message = 'This email is already registered';
+        else if (e.code === 'auth/invalid-email') message = 'Invalid email address';
+        else if (e.code === 'auth/weak-password') message = 'Password is too weak';
+        else if (e.code === 'auth/network-request-failed') message = 'Network error. Check your internet connection.';
+        else if (e.message.includes('Username already taken')) message = 'Username already taken';
+        
+        showError(err, message);
         btn.disabled = false;
         btn.textContent = 'CREATE ACCOUNT';
       }
     }
+
     // ========== LOGIN ==========
     async function doLogin() {
-      const email = document.getElementById('loginEmail').value.trim();
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
       const pass = document.getElementById('loginPass').value;
       const err = document.getElementById('loginError');
       const btn = document.getElementById('loginBtn');
+
+      err.style.display = 'none';
+
       if (!email || !pass) return showError(err, 'Enter email and password');
+
       btn.disabled = true;
       btn.textContent = 'LOGGING IN...';
+
       try {
         await auth.signInWithEmailAndPassword(email, pass);
       } catch (e) {
-        showError(err, 'Wrong email or password');
+        let message = 'Wrong email or password';
+        if (e.code === 'auth/network-request-failed') message = 'Network error. Check your internet.';
+        showError(err, message);
         btn.disabled = false;
         btn.textContent = 'LOGIN';
       }
     }
+
+    // ========== GOOGLE LOGIN ==========
+    async function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+
+        const doc = await db.collection('users').doc(user.uid).get();
+
+        if (!doc.exists) {
+          let baseUsername = (user.displayName || 'user')
+            .replace(/\s+/g, '')
+            .toLowerCase()
+            .substring(0, 12) || 'user';
+
+          let finalUsername = baseUsername;
+          let i = 1;
+          while (true) {
+            const check = await db.collection('users')
+              .where('username', '==', finalUsername)
+              .limit(1)
+              .get();
+            if (check.empty) break;
+            finalUsername = baseUsername + i;
+            i++;
+          }
+
+          await db.collection('users').doc(user.uid).set({
+            uid: user.uid,
+            username: finalUsername,
+            email: user.email,
+            balance: 0,
+            earned: 0,
+            referrals: 0,
+            tasksDone: [],
+            lastDaily: 0,
+            isAdmin: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            referredBy: null,
+            photoURL: user.photoURL || null
+          });
+
+          showToast('Welcome ' + finalUsername + '!');
+        }
+      } catch (e) {
+        console.error(e);
+        if (e.code === 'auth/popup-closed-by-user') {
+          showToast('Google login cancelled');
+        } else if (e.code === 'auth/network-request-failed') {
+          showToast('Network error. Check your internet.');
+        } else {
+          showToast('Google login failed');
+        }
+      }
+    }
+
     function doLogout() {
       auth.signOut();
     }
+
     // ========== AUTH STATE ==========
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         currentUser = user;
-        const doc = await db.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          userData = { id: doc.id, ...doc.data() };
-          // Force admin if username is "admin"
-          if (ADMIN_USERNAMES.includes(userData.username)) {
-            userData.isAdmin = true;
+        try {
+          const doc = await db.collection('users').doc(user.uid).get();
+          if (doc.exists) {
+            userData = { id: doc.id, ...doc.data() };
+            if (ADMIN_USERNAMES.includes(userData.username)) {
+              userData.isAdmin = true;
+            }
+            enterApp();
+          } else {
+            await auth.signOut();
           }
-          enterApp();
-        } else {
+        } catch (e) {
+          console.error(e);
           await auth.signOut();
         }
       } else {
@@ -841,6 +976,7 @@ this is my code
         showLogin();
       }
     });
+
     function enterApp() {
       document.getElementById('authWrap').style.display = 'none';
       document.getElementById('app').style.display = 'block';
@@ -849,20 +985,24 @@ this is my code
       refreshUI();
       switchTab('home');
     }
+
     // ========== UI HELPERS ==========
     function showError(el, msg) {
       el.textContent = msg;
       el.style.display = 'block';
     }
+
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.innerHTML = msg.replace(/\n/g, '<br>');
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 4000);
     }
+
     function fmt(n) {
       return Number(n || 0).toLocaleString();
     }
+
     async function refreshUI() {
       if (!userData) return;
       const doc = await db.collection('users').doc(currentUser.uid).get();
@@ -870,12 +1010,14 @@ this is my code
       if (ADMIN_USERNAMES.includes(userData.username)) {
         userData.isAdmin = true;
       }
+
       document.getElementById('balanceDisplay').textContent = '₦' + fmt(userData.balance);
       document.getElementById('earnedDisplay').textContent = '₦' + fmt(userData.earned);
       document.getElementById('refsDisplay').textContent = userData.referrals || 0;
       document.getElementById('tasksDoneDisplay').textContent = (userData.tasksDone || []).length;
       document.getElementById('refLink').textContent = location.origin + location.pathname + '?ref=' + userData.username;
       document.getElementById('refCount').textContent = userData.referrals || 0;
+
       const now = Date.now();
       const lastDaily = userData.lastDaily || 0;
       const canClaim = !lastDaily || (now - lastDaily) >= DAILY_COOLDOWN_MS;
@@ -890,12 +1032,14 @@ this is my code
         dailyBtn.disabled = true;
         dailyBtn.textContent = `AVAILABLE IN ${h}h ${m}m`;
       }
+
       renderTasks();
       renderMySubmissions();
       renderMyWithdrawals();
       renderLeaderboard();
       if (userData.isAdmin) renderAdmin();
     }
+
     // ========== TABS ==========
     function switchTab(tab) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -908,6 +1052,7 @@ this is my code
       if (tab === 'withdraw') renderMyWithdrawals();
       if (tab === 'leaderboard') renderLeaderboard();
     }
+
     // ========== DAILY REWARD ==========
     async function claimDaily() {
       const now = Date.now();
@@ -926,6 +1071,7 @@ this is my code
         showToast('Error: ' + e.message);
       }
     }
+
     // ========== TASKS ==========
     async function renderTasks() {
       const list = document.getElementById('tasksList');
@@ -937,10 +1083,12 @@ this is my code
           .where('userId', '==', currentUser.uid)
           .get();
         const mySubs = subsSnap.docs.map(d => d.data());
+
         if (tasks.length === 0) {
-          list.innerHTML = '<p style="color:#666;font-size:13px;">No tasks available right now. Create one in Admin.</p>';
+          list.innerHTML = '<p style="color:#666;font-size:13px;">No tasks available right now.</p>';
           return;
         }
+
         list.innerHTML = tasks.map(t => {
           const isDone = (userData.tasksDone || []).includes(t.id);
           const pendingSub = mySubs.find(s => s.taskId === t.id && s.status === 'pending');
@@ -967,6 +1115,7 @@ this is my code
         list.innerHTML = '<p style="color:#ef4444;">Error loading tasks</p>';
       }
     }
+
     function openSSModal(taskId, title, reward) {
       pendingTaskId = taskId;
       pendingScreenshotData = null;
@@ -977,11 +1126,13 @@ this is my code
       document.getElementById('fileNameDisplay').textContent = '';
       document.getElementById('ssModal').classList.add('show');
     }
+
     function closeSSModal() {
       document.getElementById('ssModal').classList.remove('show');
       pendingTaskId = null;
       pendingScreenshotData = null;
     }
+
     document.getElementById('ssFile').addEventListener('change', function() {
       const file = this.files[0];
       if (!file) return;
@@ -1000,6 +1151,7 @@ this is my code
       };
       reader.readAsDataURL(file);
     });
+
     async function submitTaskProof() {
       if (!pendingTaskId || !pendingScreenshotData) {
         return showToast('Please select a screenshot first');
@@ -1025,6 +1177,7 @@ this is my code
         showToast('Error: ' + e.message);
       }
     }
+
     async function renderMySubmissions() {
       const box = document.getElementById('mySubmissions');
       try {
@@ -1053,6 +1206,7 @@ this is my code
         box.innerHTML = '<p style="color:#666;font-size:12px;">No submissions yet</p>';
       }
     }
+
     // ========== LEADERBOARD ==========
     async function renderLeaderboard() {
       const box = document.getElementById('leaderboardList');
@@ -1086,11 +1240,13 @@ this is my code
         box.innerHTML = '<p style="color:#666;">Loading leaderboard...</p>';
       }
     }
+
     // ========== REFERRAL ==========
     function copyRef() {
       const link = document.getElementById('refLink').textContent;
       navigator.clipboard.writeText(link).then(() => showToast('Referral link copied!'));
     }
+
     // ========== WITHDRAW ==========
     async function requestWithdraw() {
       const amount = parseFloat(document.getElementById('wdAmount').value);
@@ -1118,6 +1274,7 @@ this is my code
         showToast('Error: ' + e.message);
       }
     }
+
     async function renderMyWithdrawals() {
       const box = document.getElementById('myWithdrawals');
       try {
@@ -1146,6 +1303,7 @@ this is my code
         box.innerHTML = '<p style="color:#666;font-size:12px;">No withdrawals yet</p>';
       }
     }
+
     // ========== ADMIN ==========
     async function renderAdmin() {
       const usersSnap = await db.collection('users').get();
@@ -1154,11 +1312,12 @@ this is my code
       const paidSnap = await db.collection('withdrawals').where('status', '==', 'paid').get();
       let totalPaid = 0;
       paidSnap.forEach(d => totalPaid += d.data().amount || 0);
+
       document.getElementById('adminUsers').textContent = usersSnap.size;
       document.getElementById('adminPendingWD').textContent = wdSnap.size;
       document.getElementById('adminPendingTasks').textContent = subSnap.size;
       document.getElementById('adminPaid').textContent = '₦' + fmt(totalPaid);
-      // Pending submissions
+
       const subBox = document.getElementById('adminTaskSubs');
       if (subSnap.empty) {
         subBox.innerHTML = '<p style="color:#666;font-size:12px;">No pending screenshots</p>';
@@ -1178,7 +1337,7 @@ this is my code
           `;
         }).join('');
       }
-      // Pending withdrawals
+
       const wdBox = document.getElementById('adminWithdrawals');
       if (wdSnap.empty) {
         wdBox.innerHTML = '<p style="color:#666;font-size:12px;">No pending withdrawals</p>';
@@ -1199,7 +1358,7 @@ this is my code
           `;
         }).join('');
       }
-      // Users list
+
       const uBox = document.getElementById('adminUsersList');
       uBox.innerHTML = usersSnap.docs.map(d => {
         const u = d.data();
@@ -1213,13 +1372,16 @@ this is my code
         `;
       }).join('') || '<p style="color:#666;">No users</p>';
     }
+
     function viewScreenshot(src) {
       document.getElementById('viewSSImg').src = src;
       document.getElementById('viewSSModal').classList.add('show');
     }
+
     function closeViewSS() {
       document.getElementById('viewSSModal').classList.remove('show');
     }
+
     async function adminApproveTask(subId, userId, reward, taskId) {
       try {
         await db.collection('submissions').doc(subId).update({ status: 'approved' });
@@ -1234,16 +1396,19 @@ this is my code
         showToast('Error: ' + e.message);
       }
     }
+
     async function adminRejectTask(subId) {
       await db.collection('submissions').doc(subId).update({ status: 'rejected' });
       showToast('Rejected');
       renderAdmin();
     }
+
     async function adminApproveWD(id) {
       await db.collection('withdrawals').doc(id).update({ status: 'paid' });
       showToast('Marked as paid');
       renderAdmin();
     }
+
     async function adminRejectWD(id, userId, amount) {
       await db.collection('withdrawals').doc(id).update({ status: 'rejected' });
       await db.collection('users').doc(userId).update({
@@ -1252,6 +1417,7 @@ this is my code
       showToast('Rejected & refunded');
       renderAdmin();
     }
+
     async function adminCreateTask() {
       const reward = parseFloat(document.getElementById('newTaskReward').value);
       const title = document.getElementById('newTaskTitle').value.trim();
@@ -1270,6 +1436,7 @@ this is my code
       showToast('Task created!');
       renderAdmin();
     }
+
     // ========== INIT ==========
     window.onload = function() {
       const params = new URLSearchParams(location.search);
