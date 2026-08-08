@@ -783,6 +783,20 @@
       document.getElementById('regError').style.display = 'none';
     }
 
+    // ========== FIX: helper to always restore auth buttons ==========
+    function resetAuthButtons() {
+      const loginBtn = document.getElementById('loginBtn');
+      if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'LOGIN';
+      }
+      const regBtn = document.getElementById('regBtn');
+      if (regBtn) {
+        regBtn.disabled = false;
+        regBtn.textContent = 'CREATE ACCOUNT';
+      }
+    }
+
     // ========== REGISTER ==========
     async function doRegister() {
       const username = document.getElementById('regUsername').value.trim();
@@ -848,6 +862,8 @@
 
         await db.collection('users').doc(uid).set(newUser);
         showToast('Account created! Welcome ' + username);
+        // NOTE: button stays disabled here on purpose — onAuthStateChanged
+        // will fire next and either enter the app or reset the buttons itself.
 
       } catch (e) {
         console.error(e);
@@ -880,9 +896,13 @@
 
       try {
         await auth.signInWithEmailAndPassword(email, pass);
+        // NOTE: button stays disabled here on purpose — onAuthStateChanged
+        // will fire next and either enter the app or reset the buttons itself.
       } catch (e) {
         let message = 'Wrong email or password';
         if (e.code === 'auth/network-request-failed') message = 'Network error. Check your internet.';
+        else if (e.code === 'auth/too-many-requests') message = 'Too many attempts. Try again later.';
+        else if (e.code === 'auth/user-disabled') message = 'This account has been disabled.';
         showError(err, message);
         btn.disabled = false;
         btn.textContent = 'LOGIN';
@@ -949,7 +969,7 @@
       auth.signOut();
     }
 
-    // ========== AUTH STATE ==========
+    // ========== AUTH STATE (FIXED) ==========
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         currentUser = user;
@@ -960,12 +980,29 @@
             if (ADMIN_USERNAMES.includes(userData.username)) {
               userData.isAdmin = true;
             }
+            resetAuthButtons();
             enterApp();
           } else {
+            // Profile doc missing — don't fail silently, tell the user and reset the UI
+            console.warn('No profile document found for uid:', user.uid);
+            resetAuthButtons();
+            showError(document.getElementById('loginError'), 'Account data not found. Please contact support or register again.');
             await auth.signOut();
           }
         } catch (e) {
-          console.error(e);
+          // This is the bug that broke login for many users: a failed Firestore
+          // read (commonly a Security Rules / permissions issue) used to sign
+          // the user back out with zero feedback, leaving the LOGIN button
+          // stuck on "LOGGING IN...". Now we surface the error and reset the UI.
+          console.error('Failed to load user profile:', e);
+          resetAuthButtons();
+          let msg = 'Could not load your account. Please try again.';
+          if (e.code === 'permission-denied') {
+            msg = 'Account access denied. Please contact support.';
+          } else if (e.code === 'unavailable') {
+            msg = 'Network error. Check your internet connection.';
+          }
+          showError(document.getElementById('loginError'), msg);
           await auth.signOut();
         }
       } else {
@@ -973,6 +1010,7 @@
         userData = null;
         document.getElementById('app').style.display = 'none';
         document.getElementById('authWrap').style.display = 'flex';
+        resetAuthButtons();
         showLogin();
       }
     });
