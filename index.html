@@ -35,7 +35,6 @@
       pointer-events: none;
       z-index: -1;
     }
-    /* ========== AUTH ========== */
     .auth-wrap {
       min-height: 100vh;
       display: flex;
@@ -51,10 +50,7 @@
       border-radius: 20px;
       padding: 32px 24px;
     }
-    .auth-logo {
-      text-align: center;
-      margin-bottom: 28px;
-    }
+    .auth-logo { text-align: center; margin-bottom: 28px; }
     .auth-logo-icon {
       width: 64px; height: 64px;
       background: linear-gradient(135deg, #22c55e, #16a34a);
@@ -109,7 +105,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .hidden { display: none !important; }
-    /* ========== APP ========== */
     #app { display: none; }
     .topbar {
       position: sticky; top: 0; z-index: 50;
@@ -152,7 +147,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .container { max-width: 480px; margin: 0 auto; padding: 16px; }
-    /* Balance Card */
     .balance-card {
       background: linear-gradient(145deg, #0f1a12, #0a0a0a);
       border: 1px solid rgba(34,197,94,0.25);
@@ -169,10 +163,7 @@
       color: #22c55e;
       margin-bottom: 12px;
     }
-    .balance-row {
-      display: flex;
-      gap: 10px;
-    }
+    .balance-row { display: flex; gap: 10px; }
     .balance-stat {
       flex: 1;
       background: rgba(255,255,255,0.03);
@@ -182,7 +173,6 @@
     }
     .balance-stat-val { font-size: 14px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
     .balance-stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
-    /* Nav Tabs */
     .nav-tabs {
       display: flex;
       background: #0e0e0e;
@@ -217,7 +207,6 @@
       color: #fff;
       box-shadow: 0 0 18px rgba(59,130,246,0.35);
     }
-    /* Cards */
     .card {
       background: var(--card);
       border: 1px solid #1f1f1f;
@@ -235,7 +224,6 @@
     }
     .section { display: none; }
     .section.active { display: block; }
-    /* Task Item */
     .task-item {
       background: #121212;
       border: 1px solid #222;
@@ -278,7 +266,6 @@
       background: #f59e0b;
       color: #000;
     }
-    /* Buttons */
     .btn {
       width: 100%;
       border: none;
@@ -312,7 +299,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .input:focus { border-color: #22c55e; }
-    /* Referral */
     .ref-box {
       background: #121212;
       border: 1px dashed #333;
@@ -328,7 +314,6 @@
       word-break: break-all;
       margin: 8px 0;
     }
-    /* Admin */
     .admin-stat-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -381,7 +366,6 @@
     .mini-btn.green { background: #22c55e; color: #000; }
     .mini-btn.red { background: #ef4444; color: #fff; }
     .mini-btn.blue { background: #3b82f6; color: #fff; }
-    /* Leaderboard */
     .lb-rank {
       width: 28px;
       height: 28px;
@@ -399,7 +383,6 @@
     .lb-rank.bronze { background: #b45309; color: #fff; }
     .lb-rank.normal { background: #222; color: #aaa; }
     .lb-user { display: flex; align-items: center; flex: 1; }
-    /* Screenshot preview */
     .ss-preview {
       max-width: 100%;
       max-height: 180px;
@@ -415,22 +398,6 @@
       border: 1px solid #333;
       cursor: pointer;
     }
-    .file-label {
-      display: block;
-      width: 100%;
-      background: #161616;
-      border: 1px dashed #333;
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-      color: #aaa;
-      font-size: 13px;
-      cursor: pointer;
-      margin-bottom: 10px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .file-label:hover { border-color: #22c55e; color: #22c55e; }
-    /* Toast */
     .toast {
       position: fixed;
       bottom: 24px; left: 50%;
@@ -462,7 +429,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .footer a { color: #22c55e; text-decoration: none; font-weight: 700; }
-    /* Modal for screenshot */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -495,9 +461,8 @@
   </style>
 </head>
 <body>
-  <!-- ========== AUTH ========== -->
+  <!-- AUTH -->
   <div class="auth-wrap" id="authWrap">
-    <!-- LOGIN -->
     <div class="auth-card" id="loginCard">
       <div class="auth-logo">
         <div class="auth-logo-icon">💰</div>
@@ -511,7 +476,6 @@
       <div class="auth-error" id="loginError">Wrong username or password</div>
       <div class="auth-switch">Don't have an account? <span onclick="showRegister()">Create Account</span></div>
     </div>
-    <!-- REGISTER -->
     <div class="auth-card hidden" id="registerCard">
       <div class="auth-logo">
         <div class="auth-logo-icon">💰</div>
@@ -529,7 +493,7 @@
     </div>
   </div>
 
-  <!-- ========== APP ========== -->
+  <!-- APP -->
   <div id="app">
     <div class="topbar">
       <div class="topbar-logo">
@@ -542,7 +506,6 @@
       </div>
     </div>
     <div class="container">
-      <!-- Balance -->
       <div class="balance-card">
         <div class="balance-label">Your Balance</div>
         <div class="balance-value" id="balanceDisplay">₦0</div>
@@ -562,7 +525,6 @@
         </div>
       </div>
 
-      <!-- Nav -->
       <div class="nav-tabs" id="navTabs">
         <button class="nav-tab active" data-tab="home" onclick="switchTab('home')">HOME</button>
         <button class="nav-tab" data-tab="tasks" onclick="switchTab('tasks')">TASKS</button>
@@ -727,16 +689,22 @@
     </div>
   </div>
 
-  <!-- Screenshot Submit Modal -->
+  <!-- Screenshot Submit Modal (FIXED) -->
   <div class="modal-overlay" id="ssModal">
     <div class="modal">
       <div class="card-title" id="ssModalTitle">Submit Screenshot</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:12px;" id="ssModalDesc"></p>
-      <label class="file-label" id="fileLabel">
-        📷 Tap to select screenshot
-        <input type="file" id="ssFile" accept="image/*" style="display:none;" onchange="previewScreenshot(this)">
-      </label>
-      <img id="ssPreview" class="ss-preview" style="display:none;">
+
+      <div style="margin-bottom:12px;">
+        <input type="file" id="ssFile" accept="image/*" capture="environment" style="display:none;">
+        <button type="button" class="btn btn-outline" id="pickPhotoBtn" style="margin-bottom:8px;" onclick="document.getElementById('ssFile').click()">
+          📷 SELECT / TAKE PHOTO
+        </button>
+        <div id="fileNameDisplay" style="font-size:12px;color:#22c55e;text-align:center;min-height:18px;"></div>
+      </div>
+
+      <img id="ssPreview" class="ss-preview" style="display:none; margin:0 auto 12px;">
+
       <button class="btn btn-green" onclick="submitTaskProof()">SUBMIT FOR REVIEW</button>
       <button class="btn btn-outline" onclick="closeSSModal()">CANCEL</button>
     </div>
@@ -1007,11 +975,15 @@
       if (!task) return;
       pendingTaskId = taskId;
       pendingScreenshotData = null;
+
       document.getElementById('ssModalTitle').textContent = 'Submit Proof: ' + task.title;
       document.getElementById('ssModalDesc').textContent = 'Upload a clear screenshot showing you completed this task. Admin will review and credit ₦' + task.reward;
+
       document.getElementById('ssPreview').style.display = 'none';
+      document.getElementById('ssPreview').src = '';
       document.getElementById('ssFile').value = '';
-      document.getElementById('fileLabel').textContent = '📷 Tap to select screenshot';
+      document.getElementById('fileNameDisplay').textContent = '';
+
       document.getElementById('ssModal').classList.add('show');
     }
 
@@ -1019,23 +991,34 @@
       document.getElementById('ssModal').classList.remove('show');
       pendingTaskId = null;
       pendingScreenshotData = null;
+      document.getElementById('ssFile').value = '';
     }
 
     function previewScreenshot(input) {
       const file = input.files[0];
-      if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        showToast('Image too large. Max 2MB');
-        input.value = '';
+      if (!file) {
+        document.getElementById('fileNameDisplay').textContent = '';
         return;
       }
+
+      if (file.size > 3 * 1024 * 1024) {
+        showToast('Image too large (max 3MB)');
+        input.value = '';
+        document.getElementById('fileNameDisplay').textContent = '';
+        return;
+      }
+
+      document.getElementById('fileNameDisplay').textContent = 'Selected: ' + file.name;
+
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = function(e) {
         pendingScreenshotData = e.target.result;
         const img = document.getElementById('ssPreview');
         img.src = e.target.result;
         img.style.display = 'block';
-        document.getElementById('fileLabel').textContent = '✅ Screenshot selected';
+      };
+      reader.onerror = function() {
+        showToast('Failed to read image');
       };
       reader.readAsDataURL(file);
     }
@@ -1050,7 +1033,6 @@
       if (!task) return;
 
       const subs = getSubmissions();
-      // Remove old rejected for same task
       const filtered = subs.filter(s => !(s.username === currentUser && s.taskId === pendingTaskId && s.status === 'rejected'));
 
       filtered.push({
@@ -1183,7 +1165,6 @@
     function renderAdmin() {
       const users = getUsers();
       const wds = getWithdrawals();
-      const tasks = getTasks().filter(t => t.active);
       const subs = getSubmissions();
       const pendingWD = wds.filter(w => w.status === 'pending');
       const pendingSubs = subs.filter(s => s.status === 'pending');
@@ -1208,7 +1189,7 @@
                 <div style="font-size:10px;color:#666;">${s.created}</div>
               </div>
             </div>
-            <img src="${s.screenshot}" class="ss-thumb" onclick="viewScreenshot('${s.id}')" title="Click to enlarge">
+            <img src="${s.screenshot}" class="ss-thumb" onclick="viewScreenshot(${s.id})" title="Click to enlarge">
             <div style="margin-top:10px;display:flex;gap:6px;">
               <button class="mini-btn green" onclick="adminApproveTask(${s.id})">APPROVE + PAY</button>
               <button class="mini-btn red" onclick="adminRejectTask(${s.id})">REJECT</button>
@@ -1264,7 +1245,6 @@
       const sub = subs.find(s => s.id === subId);
       if (!sub || sub.status !== 'pending') return;
 
-      // Credit user
       const users = getUsers();
       const u = users.find(x => x.username === sub.username);
       if (u) {
@@ -1277,8 +1257,6 @@
         }
       }
       sub.status = 'approved';
-      // Keep screenshot or remove to save space (optional)
-      // delete sub.screenshot;
       saveSubmissions(subs);
       showToast(`Approved! ₦${sub.reward} credited to @${sub.username}`);
       renderAdmin();
@@ -1348,6 +1326,11 @@
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 4000);
     }
+
+    // ========== FILE INPUT LISTENER (IMPORTANT) ==========
+    document.getElementById('ssFile').addEventListener('change', function() {
+      previewScreenshot(this);
+    });
 
     // ========== INIT ==========
     window.onload = function() {
