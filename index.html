@@ -35,7 +35,6 @@
       pointer-events: none;
       z-index: -1;
     }
-
     /* ========== AUTH ========== */
     .auth-wrap {
       min-height: 100vh;
@@ -110,7 +109,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .hidden { display: none !important; }
-
     /* ========== APP ========== */
     #app { display: none; }
     .topbar {
@@ -153,9 +151,7 @@
       cursor: pointer;
       font-family: 'JetBrains Mono', monospace;
     }
-
     .container { max-width: 480px; margin: 0 auto; padding: 16px; }
-
     /* Balance Card */
     .balance-card {
       background: linear-gradient(145deg, #0f1a12, #0a0a0a);
@@ -186,7 +182,6 @@
     }
     .balance-stat-val { font-size: 14px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
     .balance-stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
-
     /* Nav Tabs */
     .nav-tabs {
       display: flex;
@@ -222,7 +217,6 @@
       color: #fff;
       box-shadow: 0 0 18px rgba(59,130,246,0.35);
     }
-
     /* Cards */
     .card {
       background: var(--card);
@@ -241,7 +235,6 @@
     }
     .section { display: none; }
     .section.active { display: block; }
-
     /* Task Item */
     .task-item {
       background: #121212;
@@ -281,7 +274,10 @@
       color: #666;
       cursor: not-allowed;
     }
-
+    .task-btn.pending {
+      background: #f59e0b;
+      color: #000;
+    }
     /* Buttons */
     .btn {
       width: 100%;
@@ -303,7 +299,6 @@
       border: 1px solid #2a2a2a;
       color: #ccc;
     }
-
     .input {
       width: 100%;
       background: var(--input);
@@ -317,7 +312,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .input:focus { border-color: #22c55e; }
-
     /* Referral */
     .ref-box {
       background: #121212;
@@ -334,7 +328,6 @@
       word-break: break-all;
       margin: 8px 0;
     }
-
     /* Admin */
     .admin-stat-grid {
       display: grid;
@@ -355,8 +348,7 @@
       color: #3b82f6;
     }
     .admin-stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
-
-    .user-row, .wd-row {
+    .user-row, .wd-row, .lb-row, .sub-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -364,7 +356,7 @@
       border-bottom: 1px solid #1a1a1a;
       font-size: 12px;
     }
-    .user-row:last-child, .wd-row:last-child { border-bottom: none; }
+    .user-row:last-child, .wd-row:last-child, .lb-row:last-child, .sub-row:last-child { border-bottom: none; }
     .tag {
       font-size: 9px;
       font-weight: 800;
@@ -375,7 +367,7 @@
     .tag.pending { background: rgba(245,158,11,0.15); color: #f59e0b; }
     .tag.paid { background: rgba(34,197,94,0.15); color: #22c55e; }
     .tag.rejected { background: rgba(239,68,68,0.15); color: #ef4444; }
-
+    .tag.approved { background: rgba(34,197,94,0.15); color: #22c55e; }
     .mini-btn {
       padding: 5px 10px;
       border-radius: 8px;
@@ -388,7 +380,56 @@
     }
     .mini-btn.green { background: #22c55e; color: #000; }
     .mini-btn.red { background: #ef4444; color: #fff; }
-
+    .mini-btn.blue { background: #3b82f6; color: #fff; }
+    /* Leaderboard */
+    .lb-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .lb-rank.gold { background: #f59e0b; color: #000; }
+    .lb-rank.silver { background: #94a3b8; color: #000; }
+    .lb-rank.bronze { background: #b45309; color: #fff; }
+    .lb-rank.normal { background: #222; color: #aaa; }
+    .lb-user { display: flex; align-items: center; flex: 1; }
+    /* Screenshot preview */
+    .ss-preview {
+      max-width: 100%;
+      max-height: 180px;
+      border-radius: 10px;
+      margin: 8px 0;
+      border: 1px solid #333;
+      display: block;
+    }
+    .ss-thumb {
+      max-width: 120px;
+      max-height: 80px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
+    .file-label {
+      display: block;
+      width: 100%;
+      background: #161616;
+      border: 1px dashed #333;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      color: #aaa;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .file-label:hover { border-color: #22c55e; color: #22c55e; }
     /* Toast */
     .toast {
       position: fixed;
@@ -413,7 +454,6 @@
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
-
     .footer {
       text-align: center;
       padding: 20px 0;
@@ -422,14 +462,39 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .footer a { color: #22c55e; text-decoration: none; font-weight: 700; }
-
+    /* Modal for screenshot */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #0e0e0e;
+      border: 1px solid #2a2a2a;
+      border-radius: 18px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin: 10px 0;
+    }
     @media (max-width: 480px) {
       .balance-value { font-size: 28px; }
     }
   </style>
 </head>
 <body>
-
   <!-- ========== AUTH ========== -->
   <div class="auth-wrap" id="authWrap">
     <!-- LOGIN -->
@@ -446,7 +511,6 @@
       <div class="auth-error" id="loginError">Wrong username or password</div>
       <div class="auth-switch">Don't have an account? <span onclick="showRegister()">Create Account</span></div>
     </div>
-
     <!-- REGISTER -->
     <div class="auth-card hidden" id="registerCard">
       <div class="auth-logo">
@@ -477,7 +541,6 @@
         <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
       </div>
     </div>
-
     <div class="container">
       <!-- Balance -->
       <div class="balance-card">
@@ -504,6 +567,7 @@
         <button class="nav-tab active" data-tab="home" onclick="switchTab('home')">HOME</button>
         <button class="nav-tab" data-tab="tasks" onclick="switchTab('tasks')">TASKS</button>
         <button class="nav-tab" data-tab="refer" onclick="switchTab('refer')">REFER</button>
+        <button class="nav-tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">RANK</button>
         <button class="nav-tab" data-tab="withdraw" onclick="switchTab('withdraw')">WITHDRAW</button>
         <button class="nav-tab admin-tab hidden" id="adminTabBtn" data-tab="admin" onclick="switchTab('admin')">ADMIN</button>
       </div>
@@ -519,15 +583,17 @@
           <div class="card-title">📌 Quick Actions</div>
           <button class="btn btn-green" onclick="switchTab('tasks')">Do Tasks & Earn</button>
           <button class="btn btn-outline" onclick="switchTab('refer')">Invite Friends</button>
+          <button class="btn btn-outline" onclick="switchTab('leaderboard')">View Leaderboard</button>
           <button class="btn btn-outline" onclick="switchTab('withdraw')">Withdraw Earnings</button>
         </div>
         <div class="card">
           <div class="card-title">ℹ️ How it works</div>
           <p style="font-size:13px;color:var(--muted);line-height:1.6;">
-            1. Complete tasks to earn coins<br>
+            1. Complete tasks (upload screenshot proof)<br>
             2. Invite friends with your link<br>
             3. Claim daily reward every 24h<br>
-            4. Withdraw when you reach minimum
+            4. Climb the leaderboard<br>
+            5. Withdraw when you reach minimum
           </p>
         </div>
       </div>
@@ -536,7 +602,14 @@
       <div class="section" id="tab-tasks">
         <div class="card">
           <div class="card-title">📋 Available Tasks</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+            ⚠️ All tasks require a screenshot. Submit proof → Admin reviews → Reward credited.
+          </p>
           <div id="tasksList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📤 My Submissions</div>
+          <div id="mySubmissions"></div>
         </div>
       </div>
 
@@ -555,6 +628,17 @@
           <div style="font-size:12px;color:var(--muted);text-align:center;">
             Total referrals: <b id="refCount">0</b>
           </div>
+        </div>
+      </div>
+
+      <!-- LEADERBOARD -->
+      <div class="section" id="tab-leaderboard">
+        <div class="card">
+          <div class="card-title">🏆 Leaderboard</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+            Ranked by Total Earned
+          </p>
+          <div id="leaderboardList"></div>
         </div>
       </div>
 
@@ -586,15 +670,15 @@
           <div class="admin-stat-grid">
             <div class="admin-stat">
               <div class="admin-stat-val" id="adminUsers">0</div>
-              <div class="admin-stat-label">Total Users</div>
+              <div class="admin-stat-label">Total Users (Web)</div>
             </div>
             <div class="admin-stat">
-              <div class="admin-stat-val" id="adminPending">0</div>
+              <div class="admin-stat-val" id="adminPendingWD">0</div>
               <div class="admin-stat-label">Pending Withdrawals</div>
             </div>
             <div class="admin-stat">
-              <div class="admin-stat-val" id="adminTasks">0</div>
-              <div class="admin-stat-label">Active Tasks</div>
+              <div class="admin-stat-val" id="adminPendingTasks">0</div>
+              <div class="admin-stat-label">Pending Task Proofs</div>
             </div>
             <div class="admin-stat">
               <div class="admin-stat-val" id="adminPaid">₦0</div>
@@ -604,12 +688,17 @@
         </div>
 
         <div class="card">
+          <div class="card-title">📸 Pending Task Screenshots</div>
+          <div id="adminTaskSubs"></div>
+        </div>
+
+        <div class="card">
           <div class="card-title">💸 Pending Withdrawals</div>
           <div id="adminWithdrawals"></div>
         </div>
 
         <div class="card">
-          <div class="card-title">👥 Users</div>
+          <div class="card-title">👥 All Users</div>
           <div id="adminUsersList"></div>
         </div>
 
@@ -618,6 +707,9 @@
           <input class="input" id="newTaskReward" type="number" placeholder="Reward amount (e.g. 50)">
           <input class="input" id="newTaskTitle" placeholder="Task title">
           <input class="input" id="newTaskDesc" placeholder="Task description">
+          <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">
+            <input type="checkbox" id="newTaskRequiresProof" checked> Requires screenshot proof
+          </label>
           <button class="btn btn-blue" onclick="adminCreateTask()">CREATE TASK</button>
         </div>
 
@@ -629,9 +721,33 @@
       </div>
 
       <div class="footer">
-        POWERED BY <a href="https://t.me/maxxking12" target="_blank">MAX DEV</a> · 
+        POWERED BY <a href="https://t.me/maxxking12" target="_blank">MAX DEV</a> ·
         <a href="https://t.me/payfriend1" target="_blank">Support Group</a>
       </div>
+    </div>
+  </div>
+
+  <!-- Screenshot Submit Modal -->
+  <div class="modal-overlay" id="ssModal">
+    <div class="modal">
+      <div class="card-title" id="ssModalTitle">Submit Screenshot</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;" id="ssModalDesc"></p>
+      <label class="file-label" id="fileLabel">
+        📷 Tap to select screenshot
+        <input type="file" id="ssFile" accept="image/*" style="display:none;" onchange="previewScreenshot(this)">
+      </label>
+      <img id="ssPreview" class="ss-preview" style="display:none;">
+      <button class="btn btn-green" onclick="submitTaskProof()">SUBMIT FOR REVIEW</button>
+      <button class="btn btn-outline" onclick="closeSSModal()">CANCEL</button>
+    </div>
+  </div>
+
+  <!-- View Screenshot Modal -->
+  <div class="modal-overlay" id="viewSSModal">
+    <div class="modal">
+      <div class="card-title">Screenshot Preview</div>
+      <img id="viewSSImg" style="max-width:100%;border-radius:12px;">
+      <button class="btn btn-outline" style="margin-top:12px;" onclick="closeViewSS()">CLOSE</button>
     </div>
   </div>
 
@@ -639,13 +755,15 @@
 
   <script>
     // ========== CONFIG ==========
-    const ADMIN_USERNAMES = ['admin', 'maxxking12', 'owner']; // usernames that get admin access
+    const ADMIN_USERNAMES = ['admin', 'maxxking12', 'owner'];
     const MIN_WITHDRAW = 1000;
     const DAILY_REWARD = 200;
     const REF_REWARD = 15;
     const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
     let currentUser = null;
+    let pendingTaskId = null;
+    let pendingScreenshotData = null;
 
     // ========== STORAGE ==========
     function getUsers() {
@@ -658,9 +776,9 @@
       let t = JSON.parse(localStorage.getItem('pf_tasks') || 'null');
       if (!t) {
         t = [
-          { id: 1, title: 'Join PayFriend Group', desc: 'Join our official payout group', reward: 50, active: true },
-          { id: 2, title: 'Follow Updates Channel', desc: 'Join Max Verified Updates', reward: 40, active: true },
-          { id: 3, title: 'Share to 3 friends', desc: 'Share your referral link with 3 people', reward: 30, active: true },
+          { id: 1, title: 'Join PayFriend Group', desc: 'Join our official payout group and take screenshot', reward: 50, active: true, requiresProof: true },
+          { id: 2, title: 'Follow Updates Channel', desc: 'Join Max Verified Updates and screenshot', reward: 40, active: true, requiresProof: true },
+          { id: 3, title: 'Share to 3 friends', desc: 'Share your referral link with 3 people (screenshot chats)', reward: 30, active: true, requiresProof: true },
         ];
         localStorage.setItem('pf_tasks', JSON.stringify(t));
       }
@@ -674,6 +792,12 @@
     }
     function saveWithdrawals(arr) {
       localStorage.setItem('pf_withdrawals', JSON.stringify(arr));
+    }
+    function getSubmissions() {
+      return JSON.parse(localStorage.getItem('pf_submissions') || '[]');
+    }
+    function saveSubmissions(arr) {
+      localStorage.setItem('pf_submissions', JSON.stringify(arr));
     }
     function getSession() {
       return localStorage.getItem('pf_session');
@@ -696,23 +820,19 @@
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('regError').style.display = 'none';
     }
-
     function doRegister() {
       const user = document.getElementById('regUser').value.trim();
       const pass = document.getElementById('regPass').value;
       const pass2 = document.getElementById('regPass2').value;
       const ref = document.getElementById('regRef').value.trim();
       const err = document.getElementById('regError');
-
       if (!user || user.length < 3) { err.textContent = 'Username min 3 characters'; err.style.display = 'block'; return; }
       if (!pass || pass.length < 4) { err.textContent = 'Password min 4 characters'; err.style.display = 'block'; return; }
       if (pass !== pass2) { err.textContent = 'Passwords do not match'; err.style.display = 'block'; return; }
-
       const users = getUsers();
       if (users.find(u => u.username.toLowerCase() === user.toLowerCase())) {
         err.textContent = 'Username already taken'; err.style.display = 'block'; return;
       }
-
       const newUser = {
         username: user,
         password: pass,
@@ -724,8 +844,6 @@
         created: new Date().toLocaleDateString('en-GB'),
         referredBy: ref || null
       };
-
-      // Give referral reward
       if (ref) {
         const referrer = users.find(u => u.username.toLowerCase() === ref.toLowerCase());
         if (referrer) {
@@ -734,7 +852,6 @@
           referrer.referrals = (referrer.referrals || 0) + 1;
         }
       }
-
       users.push(newUser);
       saveUsers(users);
       setSession(user);
@@ -742,7 +859,6 @@
       enterApp();
       showToast('Account created! Welcome ' + user);
     }
-
     function doLogin() {
       const user = document.getElementById('loginUser').value.trim();
       const pass = document.getElementById('loginPass').value;
@@ -755,7 +871,6 @@
       enterApp();
       showToast('Welcome back, ' + found.username);
     }
-
     function doLogout() {
       clearSession();
       currentUser = null;
@@ -763,16 +878,12 @@
       document.getElementById('authWrap').style.display = 'flex';
       showLogin();
     }
-
     function enterApp() {
       document.getElementById('authWrap').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       document.getElementById('userChip').textContent = '@' + currentUser;
-
-      // Show admin tab if admin
       const isAdmin = ADMIN_USERNAMES.includes(currentUser.toLowerCase());
       document.getElementById('adminTabBtn').classList.toggle('hidden', !isAdmin);
-
       refreshUI();
       switchTab('home');
     }
@@ -789,7 +900,6 @@
       saveUsers(users);
       refreshUI();
     }
-
     function refreshUI() {
       const u = getCurrentUserData();
       if (!u) return;
@@ -800,7 +910,6 @@
       document.getElementById('refLink').textContent = location.origin + location.pathname + '?ref=' + u.username;
       document.getElementById('refCount').textContent = u.referrals || 0;
 
-      // Daily button state
       const now = Date.now();
       const canClaim = !u.lastDaily || (now - u.lastDaily) >= DAILY_COOLDOWN_MS;
       const dailyBtn = document.getElementById('dailyBtn');
@@ -814,12 +923,12 @@
         dailyBtn.disabled = true;
         dailyBtn.textContent = `AVAILABLE IN ${h}h ${m}m`;
       }
-
       renderTasks();
+      renderMySubmissions();
       renderMyWithdrawals();
+      renderLeaderboard();
       if (ADMIN_USERNAMES.includes(currentUser.toLowerCase())) renderAdmin();
     }
-
     function fmt(n) {
       return Number(n || 0).toLocaleString();
     }
@@ -832,8 +941,9 @@
       const btn = document.querySelector(`.nav-tab[data-tab="${tab}"]`);
       if (btn) btn.classList.add('active');
       if (tab === 'admin') renderAdmin();
-      if (tab === 'tasks') renderTasks();
+      if (tab === 'tasks') { renderTasks(); renderMySubmissions(); }
       if (tab === 'withdraw') renderMyWithdrawals();
+      if (tab === 'leaderboard') renderLeaderboard();
     }
 
     // ========== DAILY ==========
@@ -851,12 +961,13 @@
       });
     }
 
-    // ========== TASKS ==========
+    // ========== TASKS + SCREENSHOT ==========
     function renderTasks() {
       const list = document.getElementById('tasksList');
       const tasks = getTasks().filter(t => t.active);
       const u = getCurrentUserData();
       const done = u?.tasksDone || [];
+      const subs = getSubmissions().filter(s => s.username === currentUser);
 
       if (tasks.length === 0) {
         list.innerHTML = '<p style="color:#666;font-size:13px;">No tasks available right now.</p>';
@@ -865,6 +976,18 @@
 
       list.innerHTML = tasks.map(t => {
         const isDone = done.includes(t.id);
+        const pendingSub = subs.find(s => s.taskId === t.id && s.status === 'pending');
+        const rejectedSub = subs.find(s => s.taskId === t.id && s.status === 'rejected');
+
+        let btnHtml = '';
+        if (isDone) {
+          btnHtml = `<button class="task-btn" disabled>✓ COMPLETED</button>`;
+        } else if (pendingSub) {
+          btnHtml = `<button class="task-btn pending" disabled>⏳ PENDING REVIEW</button>`;
+        } else {
+          btnHtml = `<button class="task-btn" onclick="openSSModal(${t.id})">DO TASK + UPLOAD SCREENSHOT</button>`;
+        }
+
         return `
           <div class="task-item">
             <div class="task-top">
@@ -872,30 +995,129 @@
               <div class="task-reward">+₦${t.reward}</div>
             </div>
             <div class="task-desc">${t.desc}</div>
-            <button class="task-btn" ${isDone ? 'disabled' : ''} onclick="completeTask(${t.id})">
-              ${isDone ? '✓ COMPLETED' : 'DO TASK'}
-            </button>
+            ${btnHtml}
+            ${rejectedSub ? `<p style="font-size:11px;color:#ef4444;margin-top:6px;">❌ Last submission rejected. You can resubmit.</p>` : ''}
           </div>
         `;
       }).join('');
     }
 
-    function completeTask(id) {
-      const tasks = getTasks();
-      const task = tasks.find(t => t.id === id);
+    function openSSModal(taskId) {
+      const task = getTasks().find(t => t.id === taskId);
+      if (!task) return;
+      pendingTaskId = taskId;
+      pendingScreenshotData = null;
+      document.getElementById('ssModalTitle').textContent = 'Submit Proof: ' + task.title;
+      document.getElementById('ssModalDesc').textContent = 'Upload a clear screenshot showing you completed this task. Admin will review and credit ₦' + task.reward;
+      document.getElementById('ssPreview').style.display = 'none';
+      document.getElementById('ssFile').value = '';
+      document.getElementById('fileLabel').textContent = '📷 Tap to select screenshot';
+      document.getElementById('ssModal').classList.add('show');
+    }
+
+    function closeSSModal() {
+      document.getElementById('ssModal').classList.remove('show');
+      pendingTaskId = null;
+      pendingScreenshotData = null;
+    }
+
+    function previewScreenshot(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Image too large. Max 2MB');
+        input.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = e => {
+        pendingScreenshotData = e.target.result;
+        const img = document.getElementById('ssPreview');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        document.getElementById('fileLabel').textContent = '✅ Screenshot selected';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function submitTaskProof() {
+      if (!pendingTaskId) return;
+      if (!pendingScreenshotData) {
+        showToast('Please select a screenshot first');
+        return;
+      }
+      const task = getTasks().find(t => t.id === pendingTaskId);
       if (!task) return;
 
-      updateUser(u => {
-        if ((u.tasksDone || []).includes(id)) {
-          showToast('Task already completed');
-          return;
-        }
-        u.tasksDone = u.tasksDone || [];
-        u.tasksDone.push(id);
-        u.balance += task.reward;
-        u.earned += task.reward;
-        showToast(`✅ Task completed!\n+₦${task.reward}`);
+      const subs = getSubmissions();
+      // Remove old rejected for same task
+      const filtered = subs.filter(s => !(s.username === currentUser && s.taskId === pendingTaskId && s.status === 'rejected'));
+
+      filtered.push({
+        id: Date.now(),
+        username: currentUser,
+        taskId: pendingTaskId,
+        taskTitle: task.title,
+        reward: task.reward,
+        screenshot: pendingScreenshotData,
+        status: 'pending',
+        created: new Date().toLocaleString('en-GB')
       });
+      saveSubmissions(filtered);
+      closeSSModal();
+      showToast('✅ Screenshot submitted!\nAdmin will review soon.');
+      renderTasks();
+      renderMySubmissions();
+    }
+
+    function renderMySubmissions() {
+      const box = document.getElementById('mySubmissions');
+      const subs = getSubmissions().filter(s => s.username === currentUser).reverse();
+      if (subs.length === 0) {
+        box.innerHTML = '<p style="color:#666;font-size:12px;">No submissions yet</p>';
+        return;
+      }
+      box.innerHTML = subs.map(s => `
+        <div class="sub-row">
+          <div>
+            <div style="font-weight:700;">${s.taskTitle}</div>
+            <div style="font-size:10px;color:#666;">${s.created} · ₦${s.reward}</div>
+          </div>
+          <span class="tag ${s.status}">${s.status.toUpperCase()}</span>
+        </div>
+      `).join('');
+    }
+
+    // ========== LEADERBOARD ==========
+    function renderLeaderboard() {
+      const box = document.getElementById('leaderboardList');
+      const users = getUsers().slice().sort((a, b) => (b.earned || 0) - (a.earned || 0));
+
+      if (users.length === 0) {
+        box.innerHTML = '<p style="color:#666;font-size:13px;">No users yet</p>';
+        return;
+      }
+
+      box.innerHTML = users.map((u, i) => {
+        let rankClass = 'normal';
+        if (i === 0) rankClass = 'gold';
+        else if (i === 1) rankClass = 'silver';
+        else if (i === 2) rankClass = 'bronze';
+
+        const isMe = u.username === currentUser;
+        return `
+          <div class="lb-row" style="${isMe ? 'background:rgba(34,197,94,0.08);border-radius:10px;padding:10px 8px;' : ''}">
+            <div class="lb-user">
+              <div class="lb-rank ${rankClass}">${i + 1}</div>
+              <div>
+                <div style="font-weight:700;">@${u.username}${isMe ? ' (You)' : ''}</div>
+                <div style="font-size:10px;color:#666;">${u.referrals || 0} refs · ${(u.tasksDone || []).length} tasks</div>
+              </div>
+            </div>
+            <div style="font-weight:800;color:#22c55e;font-family:'JetBrains Mono',monospace;">₦${fmt(u.earned)}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     // ========== REFERRAL ==========
@@ -909,7 +1131,6 @@
       const amount = parseFloat(document.getElementById('wdAmount').value);
       const gwallet = document.getElementById('wdGwallet').value.trim();
       const u = getCurrentUserData();
-
       if (!amount || amount < MIN_WITHDRAW) {
         showToast('Minimum withdrawal is ₦' + MIN_WITHDRAW);
         return;
@@ -922,12 +1143,9 @@
         showToast('Insufficient balance');
         return;
       }
-
-      // Deduct balance
       updateUser(user => {
         user.balance -= amount;
       });
-
       const wds = getWithdrawals();
       wds.push({
         id: Date.now(),
@@ -938,13 +1156,11 @@
         created: new Date().toLocaleString('en-GB')
       });
       saveWithdrawals(wds);
-
       document.getElementById('wdAmount').value = '';
       document.getElementById('wdGwallet').value = '';
       showToast('✅ Withdrawal requested!\nAdmin will process it soon.');
       renderMyWithdrawals();
     }
-
     function renderMyWithdrawals() {
       const box = document.getElementById('myWithdrawals');
       const wds = getWithdrawals().filter(w => w.username === currentUser).reverse();
@@ -968,20 +1184,45 @@
       const users = getUsers();
       const wds = getWithdrawals();
       const tasks = getTasks().filter(t => t.active);
-      const pending = wds.filter(w => w.status === 'pending');
+      const subs = getSubmissions();
+      const pendingWD = wds.filter(w => w.status === 'pending');
+      const pendingSubs = subs.filter(s => s.status === 'pending');
       const paid = wds.filter(w => w.status === 'paid').reduce((s, w) => s + w.amount, 0);
 
       document.getElementById('adminUsers').textContent = users.length;
-      document.getElementById('adminPending').textContent = pending.length;
-      document.getElementById('adminTasks').textContent = tasks.length;
+      document.getElementById('adminPendingWD').textContent = pendingWD.length;
+      document.getElementById('adminPendingTasks').textContent = pendingSubs.length;
       document.getElementById('adminPaid').textContent = '₦' + fmt(paid);
+
+      // Pending task submissions
+      const subBox = document.getElementById('adminTaskSubs');
+      if (pendingSubs.length === 0) {
+        subBox.innerHTML = '<p style="color:#666;font-size:12px;">No pending screenshots</p>';
+      } else {
+        subBox.innerHTML = pendingSubs.map(s => `
+          <div style="background:#121212;border:1px solid #222;border-radius:12px;padding:12px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+              <div>
+                <div style="font-weight:700;">@${s.username}</div>
+                <div style="font-size:12px;color:#aaa;">${s.taskTitle} · ₦${s.reward}</div>
+                <div style="font-size:10px;color:#666;">${s.created}</div>
+              </div>
+            </div>
+            <img src="${s.screenshot}" class="ss-thumb" onclick="viewScreenshot('${s.id}')" title="Click to enlarge">
+            <div style="margin-top:10px;display:flex;gap:6px;">
+              <button class="mini-btn green" onclick="adminApproveTask(${s.id})">APPROVE + PAY</button>
+              <button class="mini-btn red" onclick="adminRejectTask(${s.id})">REJECT</button>
+            </div>
+          </div>
+        `).join('');
+      }
 
       // Pending withdrawals
       const wdBox = document.getElementById('adminWithdrawals');
-      if (pending.length === 0) {
+      if (pendingWD.length === 0) {
         wdBox.innerHTML = '<p style="color:#666;font-size:12px;">No pending withdrawals</p>';
       } else {
-        wdBox.innerHTML = pending.map(w => `
+        wdBox.innerHTML = pendingWD.map(w => `
           <div class="wd-row">
             <div>
               <div style="font-weight:700;">@${w.username} · ₦${fmt(w.amount)}</div>
@@ -1002,10 +1243,55 @@
         <div class="user-row">
           <div>
             <div style="font-weight:700;">@${u.username}</div>
-            <div style="font-size:10px;color:#666;">Bal: ₦${fmt(u.balance)} · Joined ${u.created}</div>
+            <div style="font-size:10px;color:#666;">Bal: ₦${fmt(u.balance)} · Earned: ₦${fmt(u.earned)} · Joined ${u.created}</div>
           </div>
         </div>
       `).join('') || '<p style="color:#666;font-size:12px;">No users</p>';
+    }
+
+    function viewScreenshot(subId) {
+      const sub = getSubmissions().find(s => s.id == subId);
+      if (!sub) return;
+      document.getElementById('viewSSImg').src = sub.screenshot;
+      document.getElementById('viewSSModal').classList.add('show');
+    }
+    function closeViewSS() {
+      document.getElementById('viewSSModal').classList.remove('show');
+    }
+
+    function adminApproveTask(subId) {
+      const subs = getSubmissions();
+      const sub = subs.find(s => s.id === subId);
+      if (!sub || sub.status !== 'pending') return;
+
+      // Credit user
+      const users = getUsers();
+      const u = users.find(x => x.username === sub.username);
+      if (u) {
+        if (!(u.tasksDone || []).includes(sub.taskId)) {
+          u.tasksDone = u.tasksDone || [];
+          u.tasksDone.push(sub.taskId);
+          u.balance += sub.reward;
+          u.earned += sub.reward;
+          saveUsers(users);
+        }
+      }
+      sub.status = 'approved';
+      // Keep screenshot or remove to save space (optional)
+      // delete sub.screenshot;
+      saveSubmissions(subs);
+      showToast(`Approved! ₦${sub.reward} credited to @${sub.username}`);
+      renderAdmin();
+    }
+
+    function adminRejectTask(subId) {
+      const subs = getSubmissions();
+      const sub = subs.find(s => s.id === subId);
+      if (!sub || sub.status !== 'pending') return;
+      sub.status = 'rejected';
+      saveSubmissions(subs);
+      showToast(`Rejected @${sub.username}'s submission`);
+      renderAdmin();
     }
 
     function adminApproveWD(id) {
@@ -1017,12 +1303,10 @@
       showToast(`Paid ₦${fmt(w.amount)} to @${w.username}`);
       renderAdmin();
     }
-
     function adminRejectWD(id) {
       const wds = getWithdrawals();
       const w = wds.find(x => x.id === id);
       if (!w || w.status !== 'pending') return;
-      // Refund
       const users = getUsers();
       const u = users.find(x => x.username === w.username);
       if (u) {
@@ -1034,29 +1318,25 @@
       showToast(`Rejected & refunded @${w.username}`);
       renderAdmin();
     }
-
     function adminCreateTask() {
       const reward = parseFloat(document.getElementById('newTaskReward').value);
       const title = document.getElementById('newTaskTitle').value.trim();
       const desc = document.getElementById('newTaskDesc').value.trim();
+      const requiresProof = document.getElementById('newTaskRequiresProof').checked;
       if (!reward || !title) { showToast('Fill reward and title'); return; }
-
       const tasks = getTasks();
       const id = tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
-      tasks.push({ id, title, desc: desc || title, reward, active: true });
+      tasks.push({ id, title, desc: desc || title, reward, active: true, requiresProof });
       saveTasks(tasks);
-
       document.getElementById('newTaskReward').value = '';
       document.getElementById('newTaskTitle').value = '';
       document.getElementById('newTaskDesc').value = '';
       showToast('Task created!');
       renderAdmin();
     }
-
     function adminBroadcast() {
       const msg = document.getElementById('broadcastMsg').value.trim();
       if (!msg) { showToast('Type a message'); return; }
-      // In real app this would push to all users / bot
       showToast('Broadcast queued for ' + getUsers().length + ' users');
       document.getElementById('broadcastMsg').value = '';
     }
@@ -1071,14 +1351,12 @@
 
     // ========== INIT ==========
     window.onload = function() {
-      // Handle referral from URL
       const params = new URLSearchParams(location.search);
       const ref = params.get('ref');
       if (ref) {
         document.getElementById('regRef').value = ref;
         showRegister();
       }
-
       const session = getSession();
       if (session) {
         const users = getUsers();
@@ -1089,8 +1367,6 @@
         }
       }
     };
-
-    // Enter key support
     document.getElementById('loginPass')?.addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
     document.getElementById('regPass2')?.addEventListener('keypress', e => { if (e.key === 'Enter') doRegister(); });
   </script>
