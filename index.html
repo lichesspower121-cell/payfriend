@@ -1015,10 +1015,18 @@
       } finally {
         redirectCheckDone = true;
         resetAuthButtons();
-        // onAuthStateChanged fires independently and drives the actual
-        // login/enterApp flow, so we just make sure the loading screen
-        // is hidden once we've checked for a redirect result.
+        // onAuthStateChanged fires independently (often BEFORE this async
+        // function finishes) and drives the actual login/enterApp flow.
+        // If it already ran and found no user, it was waiting on
+        // redirectCheckDone before revealing the login screen — so if we're
+        // still logged out at this point, we must reveal it ourselves here,
+        // otherwise the loading screen is stuck forever.
         document.getElementById('redirectLoading').style.display = 'none';
+        if (!currentUser) {
+          document.getElementById('authWrap').classList.remove('hidden');
+          document.getElementById('authWrap').style.display = 'flex';
+          showLogin();
+        }
       }
     }
 
