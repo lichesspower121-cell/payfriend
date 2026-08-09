@@ -22,6 +22,9 @@
       --blue: #3b82f6;
       --gold: #f59e0b;
       --red: #ef4444;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
       --text: #f1f5f9;
       --muted: #94a3b8;
     }
@@ -38,8 +41,10 @@
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(circle at 15% 20%, rgba(34,197,94,0.12) 0%, transparent 40%),
-        radial-gradient(circle at 85% 30%, rgba(59,130,246,0.08) 0%, transparent 40%);
+        radial-gradient(circle at 15% 15%, rgba(34,197,94,0.14) 0%, transparent 40%),
+        radial-gradient(circle at 85% 25%, rgba(59,130,246,0.10) 0%, transparent 40%),
+        radial-gradient(circle at 70% 80%, rgba(236,72,153,0.09) 0%, transparent 40%),
+        radial-gradient(circle at 20% 85%, rgba(245,158,11,0.08) 0%, transparent 40%);
       pointer-events: none;
       z-index: -1;
     }
@@ -175,12 +180,12 @@
     }
     .container { max-width: 480px; margin: 0 auto; padding: 16px; }
     .balance-card {
-      background: linear-gradient(145deg, #0f1a12, #0a0a0a);
-      border: 1px solid rgba(34,197,94,0.25);
+      background: linear-gradient(145deg, #14122a, #1a0f1f 45%, #0a0a0a);
+      border: 1px solid rgba(139,92,246,0.3);
       border-radius: 18px;
       padding: 22px;
       margin-bottom: 16px;
-      box-shadow: 0 0 40px rgba(34,197,94,0.08);
+      box-shadow: 0 0 40px rgba(139,92,246,0.10);
     }
     .balance-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
     .balance-value {
@@ -225,7 +230,7 @@
       white-space: nowrap;
     }
     .nav-tab.active {
-      background: #22c55e;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
       color: #000;
       box-shadow: 0 0 18px rgba(34,197,94,0.35);
     }
@@ -304,10 +309,10 @@
       font-family: 'JetBrains Mono', monospace;
       margin-bottom: 8px;
     }
-    .btn-green { background: #22c55e; color: #000; }
-    .btn-blue { background: #3b82f6; color: #fff; }
-    .btn-gold { background: #f59e0b; color: #000; }
-    .btn-red { background: #ef4444; color: #fff; }
+    .btn-green { background: linear-gradient(135deg, #22c55e, #16a34a); color: #000; }
+    .btn-blue { background: linear-gradient(135deg, #3b82f6, #06b6d4); color: #fff; }
+    .btn-gold { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #000; }
+    .btn-red { background: linear-gradient(135deg, #ef4444, #ec4899); color: #fff; }
     .btn-outline {
       background: transparent;
       border: 1px solid #2a2a2a;
@@ -522,11 +527,6 @@
       .balance-value { font-size: 28px; }
     }
     /* ===== Telegram Mini App mode ===== */
-    /* Applied only when running inside Telegram (see isTelegramMiniApp()).
-       Colors are set dynamically via CSS variables from Telegram's own
-       theme, so this adapts to the user's actual Telegram dark/light theme
-       instead of forcing our own palette. Regular web visitors never get
-       this class, so the normal look is untouched. */
     body.tg-mode .balance-card,
     body.tg-mode .card,
     body.tg-mode .auth-card {
@@ -580,6 +580,76 @@
     .profile-row:last-child { border-bottom: none; }
     .profile-row-label { color: var(--muted); }
     .profile-row-value { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+    /* ===== Hero welcome carousel ===== */
+    .hero-carousel {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      height: 138px;
+    }
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: 22px 24px 30px;
+      color: #fff;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .hero-slide.active { display: flex; opacity: 1; }
+    .hero-slide h2 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
+    .hero-slide p { font-size: 12.5px; opacity: 0.92; margin-bottom: 10px; line-height: 1.4; }
+    .hero-slide .hero-big { font-size: 22px; font-weight: 900; letter-spacing: -0.3px; }
+    .hero-slide.slide-1 { background: linear-gradient(135deg, #6d28d9, #a855f7 60%, #ec4899); }
+    .hero-slide.slide-2 { background: linear-gradient(135deg, #059669, #22c55e 60%, #84cc16); }
+    .hero-slide.slide-3 { background: linear-gradient(135deg, #d97706, #f59e0b 55%, #ef4444); }
+    .hero-slide.slide-4 { background: linear-gradient(135deg, #1d4ed8, #3b82f6 55%, #06b6d4); }
+    .hero-dots {
+      position: absolute;
+      bottom: 14px; left: 0; right: 0;
+      display: flex; justify-content: center; gap: 6px;
+    }
+    .hero-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .hero-dot.active { background: #fff; width: 18px; border-radius: 4px; }
+
+    /* ===== Quick actions grid (replaces stacked full-width buttons) ===== */
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .quick-tile {
+      background: #121212;
+      border: 1px solid #222;
+      border-radius: 14px;
+      padding: 16px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .quick-tile:active { transform: scale(0.96); }
+    .quick-tile .qi {
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      margin: 0 auto 8px;
+    }
+    .quick-tile .qt { font-size: 11.5px; font-weight: 700; color: #ddd; }
+    .quick-tile.q-tasks .qi { background: rgba(34,197,94,0.18); border: 1px solid rgba(34,197,94,0.4); }
+    .quick-tile.q-refer .qi { background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.4); }
+    .quick-tile.q-rank .qi { background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.4); }
+    .quick-tile.q-withdraw .qi { background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.4); }
   </style>
 </head>
 <body>
@@ -648,6 +718,34 @@
       </div>
     </div>
     <div class="container">
+      <div class="hero-carousel" id="heroCarousel">
+        <div class="hero-slide slide-1 active">
+          <h2>Welcome to PayFriend</h2>
+          <p>Refer and earn, or complete a task and earn too.</p>
+          <div class="hero-big">Earn ₦ your way</div>
+        </div>
+        <div class="hero-slide slide-2">
+          <h2>Invite Friends</h2>
+          <p>Earn ₦15 for every friend who joins with your link</p>
+          <div class="hero-big">Grow your team</div>
+        </div>
+        <div class="hero-slide slide-3">
+          <h2>Watch & Earn</h2>
+          <p>Earn ₦3 per ad, up to 5 times a day</p>
+          <div class="hero-big">Quick daily cash</div>
+        </div>
+        <div class="hero-slide slide-4">
+          <h2>Daily Reward</h2>
+          <p>Claim ₦200 every 24 hours, just for showing up</p>
+          <div class="hero-big">Free money, daily</div>
+        </div>
+        <div class="hero-dots" id="heroDots">
+          <div class="hero-dot active" onclick="goToHeroSlide(0)"></div>
+          <div class="hero-dot" onclick="goToHeroSlide(1)"></div>
+          <div class="hero-dot" onclick="goToHeroSlide(2)"></div>
+          <div class="hero-dot" onclick="goToHeroSlide(3)"></div>
+        </div>
+      </div>
       <div class="balance-card">
         <div class="balance-label">Your Balance</div>
         <div class="balance-value" id="balanceDisplay">₦0</div>
@@ -692,10 +790,24 @@
         </div>
         <div class="card">
           <div class="card-title">📌 Quick Actions</div>
-          <button class="btn btn-green" onclick="switchTab('tasks')">Do Tasks & Earn</button>
-          <button class="btn btn-outline" onclick="switchTab('refer')">Invite Friends</button>
-          <button class="btn btn-outline" onclick="switchTab('leaderboard')">View Leaderboard</button>
-          <button class="btn btn-outline" onclick="switchTab('withdraw')">Withdraw Earnings</button>
+          <div class="quick-grid">
+            <div class="quick-tile q-tasks" onclick="switchTab('tasks')">
+              <div class="qi">📋</div>
+              <div class="qt">Do Tasks</div>
+            </div>
+            <div class="quick-tile q-refer" onclick="switchTab('refer')">
+              <div class="qi">👥</div>
+              <div class="qt">Invite Friends</div>
+            </div>
+            <div class="quick-tile q-rank" onclick="switchTab('leaderboard')">
+              <div class="qi">🏆</div>
+              <div class="qt">Leaderboard</div>
+            </div>
+            <div class="quick-tile q-withdraw" onclick="switchTab('withdraw')">
+              <div class="qi">💸</div>
+              <div class="qt">Withdraw</div>
+            </div>
+          </div>
         </div>
         <div class="card">
           <div class="card-title">ℹ️ How it works</div>
@@ -1110,22 +1222,6 @@
       }
     }
 
-    // ========== GOOGLE LOGIN (FIXED: hybrid popup + redirect fallback) ==========
-    // Different browsers break in different ways:
-    //  - signInWithPopup fails in in-app browsers (Telegram, Instagram, etc.)
-    //    and when third-party cookies/popups are blocked.
-    //  - signInWithRedirect relies on Firebase storing session state that
-    //    survives the trip to accounts.google.com and back, on a DIFFERENT
-    //    domain (payfriend-3af18.firebaseapp.com) than the app itself. Some
-    //    browsers (Safari cross-site tracking protection, private/incognito
-    //    mode, some Android browsers) block that storage — which shows up as
-    //    "it says Signing you in... then just dumps me back on login" with
-    //    no visible error, because Firebase silently finds no result.
-    // Fix: try the popup first (works for the majority of normal browsers).
-    // Only fall back to redirect if the popup itself fails to open/complete
-    // for an environment-related reason.
-    // Returns the Telegram user object (first_name, photo_url, etc.) when
-    // running inside Telegram's Mini App, or null otherwise.
     function getTelegramUser() {
       if (isTelegramMiniApp() && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
         return window.Telegram.WebApp.initDataUnsafe.user;
@@ -1169,15 +1265,10 @@
       document.getElementById('profileTasks').textContent = (userData.tasksDone || []).length;
     }
 
-    // Detects whether we're running inside Telegram's Mini App WebView.
     function isTelegramMiniApp() {
       return !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
     }
 
-    // Applies Telegram's own theme colors (whatever the user has set —
-    // dark, light, or a custom theme) to our CSS variables, and marks the
-    // body so Telegram-specific style tweaks kick in. Only runs inside
-    // Telegram; regular web visitors keep the default look untouched.
     function applyTelegramTheme() {
       if (!isTelegramMiniApp()) return;
       const tg = window.Telegram.WebApp;
@@ -1201,12 +1292,6 @@
         console.warn('Telegram header/background color not supported:', e);
       }
     }
-    // Google actively refuses OAuth sign-in inside embedded app browsers
-    // (Telegram, Instagram, Facebook, etc.) with a "This browser or app
-    // may not be secure" error — this is enforced by Google itself, not
-    // something fixable from our code. The standard workaround is to send
-    // the user to their phone's real browser (Chrome/Safari) to sign in
-    // with Google there; Email/Password keeps working fine inside Telegram.
     async function loginWithGoogle() {
       if (isTelegramMiniApp()) {
         showToast('Google sign-in can\'t run inside Telegram.\nOpening your browser — sign in there, then come back and use Email/Password to log in here.');
@@ -1222,7 +1307,6 @@
       try {
         const result = await auth.signInWithPopup(provider);
         await ensureUserProfile(result.user);
-        // onAuthStateChanged will pick up the signed-in user from here.
       } catch (e) {
         console.error('Google popup sign-in error:', e);
         const fallbackCodes = [
@@ -1232,12 +1316,9 @@
           'auth/operation-not-supported-in-this-environment'
         ];
         if (fallbackCodes.includes(e.code)) {
-          // Popup didn't work in this environment — fall back to a full
-          // page redirect instead, which is more compatible.
           setGoogleButtonsState(true, 'REDIRECTING TO GOOGLE...');
           try {
             await auth.signInWithRedirect(provider);
-            // Page will navigate away now; nothing more to do here.
           } catch (redirectErr) {
             console.error('Redirect fallback also failed:', redirectErr);
             setGoogleButtonsState(false);
@@ -1269,8 +1350,6 @@
       });
     }
 
-    // Creates the Firestore profile doc for a Google user on their first
-    // sign-in. Shared by both the popup path and the redirect-return path.
     async function ensureUserProfile(user) {
       const doc = await db.collection('users').doc(user.uid).get();
       if (doc.exists) return;
@@ -1310,9 +1389,6 @@
       showToast('Welcome ' + finalUsername + '!');
     }
 
-    // Handles the return trip after signInWithRedirect sends the user back
-    // from Google (only relevant when the popup fallback above was used).
-    // Must run on every page load, before we decide what to show.
     async function handleGoogleRedirectResult() {
       try {
         const result = await auth.getRedirectResult();
@@ -1334,12 +1410,6 @@
         redirectCheckDone = true;
         setGoogleButtonsState(false);
         resetAuthButtons();
-        // onAuthStateChanged fires independently (often BEFORE this async
-        // function finishes) and drives the actual login/enterApp flow.
-        // If it already ran and found no user, it was waiting on
-        // redirectCheckDone before revealing the login screen — so if we're
-        // still logged out at this point, we must reveal it ourselves here,
-        // otherwise the loading screen is stuck forever.
         document.getElementById('redirectLoading').style.display = 'none';
         if (!currentUser) {
           document.getElementById('authWrap').classList.remove('hidden');
@@ -1388,8 +1458,6 @@
         currentUser = null;
         userData = null;
         document.getElementById('app').style.display = 'none';
-        // Only reveal the login screen once we've checked for a pending
-        // Google redirect result, so users don't see a login flash mid-redirect.
         if (redirectCheckDone) {
           document.getElementById('authWrap').classList.remove('hidden');
           document.getElementById('authWrap').style.display = 'flex';
@@ -1420,6 +1488,30 @@
       setTimeout(() => banner.classList.remove('show'), 3000);
     }
 
+    // ========== HERO CAROUSEL ==========
+    let heroSlideIndex = 0;
+    let heroInterval = null;
+
+    function goToHeroSlide(i) {
+      const slides = document.querySelectorAll('.hero-slide');
+      const dots = document.querySelectorAll('.hero-dot');
+      if (!slides.length) return;
+      slides.forEach(s => s.classList.remove('active'));
+      dots.forEach(d => d.classList.remove('active'));
+      slides[i].classList.add('active');
+      dots[i].classList.add('active');
+      heroSlideIndex = i;
+    }
+
+    function startHeroCarousel() {
+      if (heroInterval) return;
+      const slides = document.querySelectorAll('.hero-slide');
+      if (!slides.length) return;
+      heroInterval = setInterval(() => {
+        goToHeroSlide((heroSlideIndex + 1) % slides.length);
+      }, 4000);
+    }
+
     // ========== UI HELPERS ==========
     function showError(el, msg) {
       el.textContent = msg;
@@ -1437,9 +1529,6 @@
       return Number(n || 0).toLocaleString();
     }
 
-    // Turns any raw http(s) URLs typed into plain text into clickable links.
-    // Used for task descriptions that were written with a link pasted
-    // directly into the text, rather than using the dedicated Link field.
     function linkify(text) {
       const urlRegex = /(https?:\/\/[^\s<]+)/g;
       return text.replace(urlRegex, url =>
@@ -1500,7 +1589,7 @@
     function getAdsWatchedToday() {
       if (!userData) return 0;
       const today = todayDateString();
-      if (userData.lastAdDate !== today) return 0; // new day, counter resets
+      if (userData.lastAdDate !== today) return 0;
       return userData.adsWatchedToday || 0;
     }
 
@@ -1524,9 +1613,6 @@
         return showToast('You have reached today\'s ad limit. Come back tomorrow!');
       }
       const btn = document.getElementById('watchAdBtn');
-      // Clicking this button is itself the "click" Adsterra's Popunder
-      // script listens for — it will open the ad automatically. We don't
-      // need to call anything else to trigger it.
       showToast('📺 Ad opening in a new tab.\nSwitch back here after a few seconds!');
       let secondsLeft = AD_WAIT_SECONDS;
       btn.disabled = true;
@@ -1973,13 +2059,6 @@
       renderAdmin();
     }
 
-    // Inside Telegram's Mini App WebView, a normal <a target="_blank"> link
-    // often doesn't open a real new tab — it can hijack the current mini
-    // app view and navigate away from PayFriend entirely. Telegram provides
-    // its own openLink() method specifically to avoid this. This listener
-    // catches clicks on any link we render (task links, footer links,
-    // auto-linkified URLs in descriptions) and routes them through
-    // Telegram's method instead, so the mini app stays open.
     document.addEventListener('click', function(e) {
       if (!isTelegramMiniApp()) return;
       const link = e.target.closest('a[href]');
@@ -1996,8 +2075,6 @@
 
     // ========== INIT ==========
     window.addEventListener('DOMContentLoaded', function() {
-      // If opened inside Telegram's Mini App, tell Telegram we're ready
-      // and expand to full height for a proper native-feeling layout.
       if (isTelegramMiniApp()) {
         try {
           window.Telegram.WebApp.ready();
@@ -2013,8 +2090,7 @@
         document.getElementById('regRef').value = ref;
         showRegister();
       }
-      // Always check for a pending Google redirect result first, before
-      // showing any auth screen. This is what completes signInWithRedirect.
+      startHeroCarousel();
       handleGoogleRedirectResult();
     });
   </script>
