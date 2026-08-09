@@ -13,6 +13,9 @@
 
   <!-- Adsterra Native Banner -->
   <script async="async" data-cfasync="false" src="https://pl30759246.effectivecpmnetwork.com/ebafff99d050c06bcdba55e8ca1154ef/invoke.js"></script>
+
+  <!-- Adsterra Popunder (fires on user click, used by the Watch Ad button) -->
+  <script src="https://pl30759301.effectivecpmnetwork.com/91/f7/9a/91f79a23f567d076cec276e70d8d4608.js"></script>
   <style>
     :root {
       --bg: #050505;
@@ -598,6 +601,12 @@
       <!-- HOME -->
       <div class="section active" id="tab-home">
         <div class="card">
+          <div class="card-title">📺 Watch Ads & Earn</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;">Earn ₦3 per ad · Up to 5 per day</p>
+          <p style="font-size:11px;color:#666;margin-bottom:12px;" id="adWatchCount">0/5 watched today</p>
+          <button class="btn btn-blue" id="watchAdBtn" onclick="startWatchAd()">WATCH AD</button>
+        </div>
+        <div class="card">
           <div class="card-title">🎁 Daily Reward</div>
           <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Claim ₦200 every 24 hours</p>
           <button class="btn btn-gold" id="dailyBtn" onclick="claimDaily()">CLAIM DAILY REWARD</button>
@@ -785,11 +794,21 @@
     const REF_REWARD = 15;
     const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
     const ADMIN_USERNAMES = ["admin"];
+    const AD_REWARD = 3;
+    const MAX_ADS_PER_DAY = 5;
+    const AD_WAIT_SECONDS = 20; // forces users to actually wait before crediting
     let currentUser = null;
     let userData = null;
     let pendingTaskId = null;
     let pendingScreenshotData = null;
     let redirectCheckDone = false;
+    let adWatchTimer = null;
+
+    // Returns today's date as a plain string like "2026-08-09", used to
+    // reset the daily ad-watch counter without needing a 24h rolling timer.
+    function todayDateString() {
+      return new Date().toISOString().slice(0, 10);
+    }
 
     // ========== AUTH UI ==========
     function showLogin() {
@@ -1192,11 +1211,78 @@
         dailyBtn.textContent = `AVAILABLE IN ${h}h ${m}m`;
       }
 
+      renderWatchAdUI();
       renderTasks();
       renderMySubmissions();
       renderMyWithdrawals();
       renderLeaderboard();
       if (userData.isAdmin) renderAdmin();
+    }
+
+    // ========== WATCH ADS & EARN ==========
+    function getAdsWatchedToday() {
+      if (!userData) return 0;
+      const today = todayDateString();
+      if (userData.lastAdDate !== today) return 0; // new day, counter resets
+      return userData.adsWatchedToday || 0;
+    }
+
+    function renderWatchAdUI() {
+      const btn = document.getElementById('watchAdBtn');
+      const countLabel = document.getElementById('adWatchCount');
+      if (!btn || !countLabel) return;
+      const watched = getAdsWatchedToday();
+      countLabel.textContent = `${watched}/${MAX_ADS_PER_DAY} watched today`;
+      if (watched >= MAX_ADS_PER_DAY) {
+        btn.disabled = true;
+        btn.textContent = 'DAILY LIMIT REACHED';
+      } else if (!adWatchTimer) {
+        btn.disabled = false;
+        btn.textContent = 'WATCH AD';
+      }
+    }
+
+    function startWatchAd() {
+      if (getAdsWatchedToday() >= MAX_ADS_PER_DAY) {
+        return showToast('You have reached today\'s ad limit. Come back tomorrow!');
+      }
+      const btn = document.getElementById('watchAdBtn');
+      // Clicking this button is itself the "click" Adsterra's Popunder
+      // script listens for — it will open the ad automatically. We don't
+      // need to call anything else to trigger it.
+      let secondsLeft = AD_WAIT_SECONDS;
+      btn.disabled = true;
+      btn.textContent = `AD PLAYING... ${secondsLeft}s`;
+      adWatchTimer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(adWatchTimer);
+          adWatchTimer = null;
+          creditAdWatch();
+        } else {
+          btn.textContent = `AD PLAYING... ${secondsLeft}s`;
+        }
+      }, 1000);
+    }
+
+    async function creditAdWatch() {
+      try {
+        const today = todayDateString();
+        const wasToday = userData.lastAdDate === today;
+        const newCount = (wasToday ? (userData.adsWatchedToday || 0) : 0) + 1;
+
+        await db.collection('users').doc(currentUser.uid).update({
+          balance: firebase.firestore.FieldValue.increment(AD_REWARD),
+          earned: firebase.firestore.FieldValue.increment(AD_REWARD),
+          adsWatchedToday: newCount,
+          lastAdDate: today
+        });
+        showToast('✅ Ad reward credited!\n+₦' + AD_REWARD);
+        refreshUI();
+      } catch (e) {
+        showToast('Error: ' + e.message);
+        renderWatchAdUI();
+      }
     }
 
     // ========== TABS ==========
