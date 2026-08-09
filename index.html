@@ -964,6 +964,7 @@
         </div>
         <div class="card">
           <div class="card-title">👥 All Users</div>
+          <input class="input" id="adminUserSearch" placeholder="Search by username..." oninput="filterAdminUsers()" style="margin-bottom:10px;">
           <div id="adminUsersList"></div>
         </div>
         <div class="card">
@@ -1010,6 +1011,15 @@
     </div>
   </div>
 
+  <!-- Admin: User Profile Modal -->
+  <div class="modal-overlay" id="adminUserModal">
+    <div class="modal">
+      <div class="card-title">👤 User Profile</div>
+      <div id="adminUserModalBody"><div class="loading">Loading...</div></div>
+      <button class="btn btn-outline" style="margin-top:12px;" onclick="closeAdminUserModal()">CLOSE</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -1044,6 +1054,7 @@
     let adWatchTimer = null;
     let popunderScriptLoaded = false;
     let nativeBannerScriptLoaded = false;
+    let adminAllUsersData = [];
 
     // Loads the Adsterra Popunder script on demand, only once a user is
     // actually inside the app. This keeps it away from the login/register
@@ -1157,7 +1168,8 @@
           lastDaily: 0,
           isAdmin: ADMIN_USERNAMES.includes(username.toLowerCase()),
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          referredBy: null
+          referredBy: null,
+          banned: false
         };
 
         if (refCode) {
@@ -1383,7 +1395,8 @@
         isAdmin: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         referredBy: null,
-        photoURL: user.photoURL || null
+        photoURL: user.photoURL || null,
+        banned: false
       });
 
       showToast('Welcome ' + finalUsername + '!');
@@ -1433,6 +1446,12 @@
             userData = { id: doc.id, ...doc.data() };
             if (ADMIN_USERNAMES.includes(userData.username)) {
               userData.isAdmin = true;
+            }
+            if (userData.banned) {
+              resetAuthButtons();
+              showError(document.getElementById('loginError'), 'Your account has been banned. Contact support.');
+              await auth.signOut();
+              return;
             }
             resetAuthButtons();
             enterApp();
@@ -1542,6 +1561,11 @@
       userData = { id: doc.id, ...doc.data() };
       if (ADMIN_USERNAMES.includes(userData.username)) {
         userData.isAdmin = true;
+      }
+      if (userData.banned) {
+        showToast('🚫 Your account has been banned.');
+        await auth.signOut();
+        return;
       }
 
       document.getElementById('userChip').textContent = ('@' + userData.username);
@@ -1978,18 +2002,115 @@
         }).join('');
       }
 
+      adminAllUsersData = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderAdminUsersList(adminAllUsersData);
+    }
+
+    function renderAdminUsersList(list) {
       const uBox = document.getElementById('adminUsersList');
-      uBox.innerHTML = usersSnap.docs.map(d => {
-        const u = d.data();
-        return `
-          <div class="user-row">
-            <div>
-              <div style="font-weight:700;">@${u.username}</div>
-              <div style="font-size:10px;color:#666;">Bal: ₦${fmt(u.balance)} · Earned: ₦${fmt(u.earned)}</div>
+      uBox.innerHTML = list.map(u => `
+        <div class="user-row" style="cursor:pointer;" onclick="openAdminUserModal('${u.id}')">
+          <div>
+            <div style="font-weight:700;">@${u.username} ${u.banned ? '<span class="tag rejected">BANNED</span>' : ''}</div>
+            <div style="font-size:10px;color:#666;">Bal: ₦${fmt(u.balance)} · Earned: ₦${fmt(u.earned)}</div>
+          </div>
+          <div style="color:#555;font-size:16px;">›</div>
+        </div>
+      `).join('') || '<p style="color:#666;">No users</p>';
+    }
+
+    function filterAdminUsers() {
+      const q = document.getElementById('adminUserSearch').value.trim().toLowerCase();
+      const filtered = q
+        ? adminAllUsersData.filter(u => (u.username || '').toLowerCase().includes(q))
+        : adminAllUsersData;
+      renderAdminUsersList(filtered);
+    }
+
+    // ========== ADMIN: USER PROFILE MODAL ==========
+    let adminSelectedUserId = null;
+
+    async function openAdminUserModal(userId) {
+      adminSelectedUserId = userId;
+      document.getElementById('adminUserModalBody').innerHTML = '<div class="loading">Loading...</div>';
+      document.getElementById('adminUserModal').classList.add('show');
+      await renderAdminUserModal();
+    }
+
+    function closeAdminUserModal() {
+      document.getElementById('adminUserModal').classList.remove('show');
+      adminSelectedUserId = null;
+    }
+
+    async function renderAdminUserModal() {
+      if (!adminSelectedUserId) return;
+      const body = document.getElementById('adminUserModalBody');
+      try {
+        const doc = await db.collection('users').doc(adminSelectedUserId).get();
+        if (!doc.exists) {
+          body.innerHTML = '<p style="color:#666;">User not found</p>';
+          return;
+        }
+        const u = doc.data();
+        const banned = !!u.banned;
+        let joined = 'Recently';
+        if (u.createdAt && u.createdAt.toDate) joined = u.createdAt.toDate().toLocaleDateString();
+
+        body.innerHTML = `
+          <div style="text-align:center;margin-bottom:14px;">
+            <div class="profile-avatar" style="margin:0 auto 10px;">${(u.username || 'U').charAt(0).toUpperCase()}</div>
+            <div class="profile-name">@${u.username}</div>
+            <div class="profile-username">${u.email || ''}</div>
+            ${banned ? '<div style="margin-top:8px;"><span class="tag rejected">BANNED</span></div>' : ''}
+          </div>
+          <div class="profile-row"><div class="profile-row-label">Balance</div><div class="profile-row-value">₦${fmt(u.balance)}</div></div>
+          <div class="profile-row"><div class="profile-row-label">Total Earned</div><div class="profile-row-value">₦${fmt(u.earned)}</div></div>
+          <div class="profile-row"><div class="profile-row-label">Referrals</div><div class="profile-row-value">${u.referrals || 0}</div></div>
+          <div class="profile-row"><div class="profile-row-label">Tasks Done</div><div class="profile-row-value">${(u.tasksDone || []).length}</div></div>
+          <div class="profile-row"><div class="profile-row-label">Joined</div><div class="profile-row-value">${joined}</div></div>
+          <div style="margin-top:16px;">
+            <input class="input" id="adjAmount" type="number" placeholder="Amount (e.g. 500)">
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button class="btn btn-green" style="margin-bottom:0;" onclick="adminAdjustBalance(true)">+ ADD MONEY</button>
+              <button class="btn btn-red" style="margin-bottom:0;" onclick="adminAdjustBalance(false)">− DEDUCT MONEY</button>
             </div>
+            <button class="btn ${banned ? 'btn-green' : 'btn-gold'}" onclick="adminToggleBan(${banned})">${banned ? '✅ UNBAN USER' : '🚫 BAN USER'}</button>
           </div>
         `;
-      }).join('') || '<p style="color:#666;">No users</p>';
+      } catch (e) {
+        body.innerHTML = '<p style="color:#ef4444;">Error loading user</p>';
+      }
+    }
+
+    async function adminAdjustBalance(isAdd) {
+      const amtInput = document.getElementById('adjAmount');
+      const amount = parseFloat(amtInput.value);
+      if (!amount || amount <= 0) return showToast('Enter a valid amount');
+      if (!adminSelectedUserId) return;
+      try {
+        const delta = isAdd ? amount : -amount;
+        const update = { balance: firebase.firestore.FieldValue.increment(delta) };
+        if (isAdd) update.earned = firebase.firestore.FieldValue.increment(amount);
+        await db.collection('users').doc(adminSelectedUserId).update(update);
+        amtInput.value = '';
+        showToast(isAdd ? ('✅ ₦' + amount + ' added to balance') : ('✅ ₦' + amount + ' deducted from balance'));
+        await renderAdminUserModal();
+        renderAdmin();
+      } catch (e) {
+        showToast('Error: ' + e.message);
+      }
+    }
+
+    async function adminToggleBan(currentlyBanned) {
+      if (!adminSelectedUserId) return;
+      try {
+        await db.collection('users').doc(adminSelectedUserId).update({ banned: !currentlyBanned });
+        showToast(!currentlyBanned ? '🚫 User banned' : '✅ User unbanned');
+        await renderAdminUserModal();
+        renderAdmin();
+      } catch (e) {
+        showToast('Error: ' + e.message);
+      }
     }
 
     function viewScreenshot(src) {
