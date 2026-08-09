@@ -6,6 +6,9 @@
   <title>PayFriend • Earn • Tasks • Rewards</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
  
+  <!-- Telegram Mini App SDK (safe to include even outside Telegram) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
@@ -28,7 +31,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      background: #050505;
+      background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
@@ -448,6 +451,24 @@
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
+    .top-banner {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #000;
+      text-align: center;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      z-index: 400;
+      transform: translateY(-100%);
+      transition: transform 0.35s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .top-banner.show {
+      transform: translateY(0);
+    }
     .footer {
       text-align: center;
       padding: 20px 0;
@@ -503,9 +524,70 @@
     @media (max-width: 480px) {
       .balance-value { font-size: 28px; }
     }
+    /* ===== Telegram Mini App mode ===== */
+    /* Applied only when running inside Telegram (see isTelegramMiniApp()).
+       Colors are set dynamically via CSS variables from Telegram's own
+       theme, so this adapts to the user's actual Telegram dark/light theme
+       instead of forcing our own palette. Regular web visitors never get
+       this class, so the normal look is untouched. */
+    body.tg-mode .balance-card,
+    body.tg-mode .card,
+    body.tg-mode .auth-card {
+      box-shadow: none;
+    }
+    body.tg-mode .nav-tab.active {
+      box-shadow: none;
+    }
+    body.tg-mode .topbar {
+      backdrop-filter: none;
+    }
+    .avatar-circle {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #000;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .profile-avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #000;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900;
+      font-size: 24px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-name { font-size: 17px; font-weight: 800; }
+    .profile-username { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #1a1a1a;
+      font-size: 13px;
+    }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-row-label { color: var(--muted); }
+    .profile-row-value { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
   </style>
 </head>
 <body>
+  <div class="top-banner" id="welcomeBanner"></div>
+
   <!-- Shown briefly while we check for a Google redirect result on page load -->
   <div class="full-loading" id="redirectLoading">Signing you in...</div>
 
@@ -563,6 +645,7 @@
         <h1>PayFriend</h1>
       </div>
       <div class="topbar-right">
+        <div class="avatar-circle" id="topbarAvatar">?</div>
         <div class="user-chip" id="userChip">@user</div>
         <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
       </div>
@@ -592,6 +675,7 @@
         <button class="nav-tab" data-tab="refer" onclick="switchTab('refer')">REFER</button>
         <button class="nav-tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">RANK</button>
         <button class="nav-tab" data-tab="withdraw" onclick="switchTab('withdraw')">WITHDRAW</button>
+        <button class="nav-tab" data-tab="profile" onclick="switchTab('profile')">PROFILE</button>
         <button class="nav-tab admin-tab hidden" id="adminTabBtn" data-tab="admin" onclick="switchTab('admin')">ADMIN</button>
       </div>
 
@@ -691,6 +775,51 @@
         </div>
       </div>
 
+      <!-- PROFILE -->
+      <div class="section" id="tab-profile">
+        <div class="card">
+          <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatar">?</div>
+            <div>
+              <div class="profile-name" id="profileName">User</div>
+              <div class="profile-username" id="profileUsername">@user</div>
+            </div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-row-label">Email</div>
+            <div class="profile-row-value" id="profileEmail">-</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-row-label">Member since</div>
+            <div class="profile-row-value" id="profileJoined">-</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-row-label">Signed in via</div>
+            <div class="profile-row-value" id="profileSource">-</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 Your Stats</div>
+          <div class="profile-row">
+            <div class="profile-row-label">Balance</div>
+            <div class="profile-row-value" id="profileBalance">₦0</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-row-label">Total Earned</div>
+            <div class="profile-row-value" id="profileEarned">₦0</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-row-label">Referrals</div>
+            <div class="profile-row-value" id="profileRefs">0</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-row-label">Tasks Completed</div>
+            <div class="profile-row-value" id="profileTasks">0</div>
+          </div>
+        </div>
+        <button class="btn btn-red" onclick="doLogout()">LOGOUT</button>
+      </div>
+
       <!-- ADMIN -->
       <div class="section" id="tab-admin">
         <div class="card">
@@ -772,11 +901,6 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- Adsterra Popunder (fires on user click, used by the Watch Ad button) -->
-  <!-- Loaded here, right before </body>, so the full page DOM exists before
-       the script runs and tries to attach itself. -->
-  <script src="https://pl30759301.effectivecpmnetwork.com/91/f7/9a/91f79a23f567d076cec276e70d8d4608.js"></script>
-
   <script>
     // ========== FIREBASE CONFIG ==========
     const firebaseConfig = {
@@ -807,6 +931,19 @@
     let pendingScreenshotData = null;
     let redirectCheckDone = false;
     let adWatchTimer = null;
+    let popunderScriptLoaded = false;
+
+    // Loads the Adsterra Popunder script on demand, only once a user is
+    // actually inside the app. This keeps it away from the login/register
+    // screens entirely, so nothing can accidentally trigger a popup ad
+    // while someone's just trying to sign in.
+    function loadPopunderScriptIfNeeded() {
+      if (popunderScriptLoaded) return;
+      popunderScriptLoaded = true;
+      const s = document.createElement('script');
+      s.src = 'https://pl30759301.effectivecpmnetwork.com/91/f7/9a/91f79a23f567d076cec276e70d8d4608.js';
+      document.body.appendChild(s);
+    }
 
     // Returns today's date as a plain string like "2026-08-09", used to
     // reset the daily ad-watch counter without needing a 24h rolling timer.
@@ -974,7 +1111,99 @@
     // Fix: try the popup first (works for the majority of normal browsers).
     // Only fall back to redirect if the popup itself fails to open/complete
     // for an environment-related reason.
+    // Returns the Telegram user object (first_name, photo_url, etc.) when
+    // running inside Telegram's Mini App, or null otherwise.
+    function getTelegramUser() {
+      if (isTelegramMiniApp() && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+        return window.Telegram.WebApp.initDataUnsafe.user;
+      }
+      return null;
+    }
+
+    function renderProfile() {
+      if (!userData) return;
+      const tgUser = getTelegramUser();
+      const initial = (userData.username || 'U').charAt(0).toUpperCase();
+      const photoUrl = (tgUser && tgUser.photo_url) || userData.photoURL || null;
+      const displayName = tgUser
+        ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
+        : userData.username;
+
+      const avatarHtml = photoUrl
+        ? `<img src="${photoUrl}" alt="avatar">`
+        : initial;
+      document.getElementById('profileAvatar').innerHTML = avatarHtml;
+      document.getElementById('profileName').textContent = displayName;
+      document.getElementById('profileUsername').textContent = '@' + userData.username;
+      document.getElementById('profileEmail').textContent = userData.email || '-';
+
+      let joined = 'Recently';
+      if (userData.createdAt && userData.createdAt.toDate) {
+        joined = userData.createdAt.toDate().toLocaleDateString();
+      }
+      document.getElementById('profileJoined').textContent = joined;
+
+      let source = 'Email/Password';
+      if (currentUser && currentUser.providerData && currentUser.providerData[0]) {
+        source = currentUser.providerData[0].providerId === 'google.com' ? 'Google' : 'Email/Password';
+      }
+      if (tgUser) source += ' (Telegram)';
+      document.getElementById('profileSource').textContent = source;
+
+      document.getElementById('profileBalance').textContent = '₦' + fmt(userData.balance);
+      document.getElementById('profileEarned').textContent = '₦' + fmt(userData.earned);
+      document.getElementById('profileRefs').textContent = userData.referrals || 0;
+      document.getElementById('profileTasks').textContent = (userData.tasksDone || []).length;
+    }
+
+    // Detects whether we're running inside Telegram's Mini App WebView.
+    function isTelegramMiniApp() {
+      return !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+    }
+
+    // Applies Telegram's own theme colors (whatever the user has set —
+    // dark, light, or a custom theme) to our CSS variables, and marks the
+    // body so Telegram-specific style tweaks kick in. Only runs inside
+    // Telegram; regular web visitors keep the default look untouched.
+    function applyTelegramTheme() {
+      if (!isTelegramMiniApp()) return;
+      const tg = window.Telegram.WebApp;
+      const tp = tg.themeParams || {};
+      document.body.classList.add('tg-mode');
+
+      const root = document.documentElement.style;
+      if (tp.bg_color) root.setProperty('--bg', tp.bg_color);
+      if (tp.secondary_bg_color) {
+        root.setProperty('--card', tp.secondary_bg_color);
+        root.setProperty('--input', tp.secondary_bg_color);
+      }
+      if (tp.text_color) root.setProperty('--text', tp.text_color);
+      if (tp.hint_color) root.setProperty('--muted', tp.hint_color);
+      if (tp.button_color) root.setProperty('--green', tp.button_color);
+
+      try {
+        if (tp.bg_color) tg.setHeaderColor(tp.bg_color);
+        if (tp.bg_color) tg.setBackgroundColor(tp.bg_color);
+      } catch (e) {
+        console.warn('Telegram header/background color not supported:', e);
+      }
+    }
+    // Google actively refuses OAuth sign-in inside embedded app browsers
+    // (Telegram, Instagram, Facebook, etc.) with a "This browser or app
+    // may not be secure" error — this is enforced by Google itself, not
+    // something fixable from our code. The standard workaround is to send
+    // the user to their phone's real browser (Chrome/Safari) to sign in
+    // with Google there; Email/Password keeps working fine inside Telegram.
     async function loginWithGoogle() {
+      if (isTelegramMiniApp()) {
+        showToast('Google sign-in can\'t run inside Telegram.\nOpening your browser — sign in there, then come back and use Email/Password to log in here.');
+        try {
+          window.Telegram.WebApp.openLink(location.href, { try_instant_view: false });
+        } catch (e) {
+          console.error('Could not open external browser from Telegram:', e);
+        }
+        return;
+      }
       const provider = new firebase.auth.GoogleAuthProvider();
       setGoogleButtonsState(true, 'SIGNING IN...');
       try {
@@ -1164,8 +1393,17 @@
       document.getElementById('app').style.display = 'block';
       document.getElementById('userChip').textContent = '@' + userData.username;
       document.getElementById('adminTabBtn').classList.toggle('hidden', !userData.isAdmin);
+      showWelcomeBanner('👋 Welcome back, @' + userData.username + '!');
+      loadPopunderScriptIfNeeded();
       refreshUI();
       switchTab('home');
+    }
+
+    function showWelcomeBanner(msg) {
+      const banner = document.getElementById('welcomeBanner');
+      banner.textContent = msg;
+      banner.classList.add('show');
+      setTimeout(() => banner.classList.remove('show'), 3000);
     }
 
     // ========== UI HELPERS ==========
@@ -1203,6 +1441,16 @@
         userData.isAdmin = true;
       }
 
+      document.getElementById('userChip').textContent = ('@' + userData.username);
+      const tgUserForAvatar = getTelegramUser();
+      const avatarUrl = (tgUserForAvatar && tgUserForAvatar.photo_url) || userData.photoURL || null;
+      const topbarAvatar = document.getElementById('topbarAvatar');
+      if (topbarAvatar) {
+        topbarAvatar.innerHTML = avatarUrl
+          ? `<img src="${avatarUrl}" alt="avatar">`
+          : (userData.username || 'U').charAt(0).toUpperCase();
+      }
+
       document.getElementById('balanceDisplay').textContent = '₦' + fmt(userData.balance);
       document.getElementById('earnedDisplay').textContent = '₦' + fmt(userData.earned);
       document.getElementById('refsDisplay').textContent = userData.referrals || 0;
@@ -1226,6 +1474,7 @@
       }
 
       renderWatchAdUI();
+      renderProfile();
       renderTasks();
       renderMySubmissions();
       renderMyWithdrawals();
@@ -1311,6 +1560,7 @@
       if (tab === 'tasks') { renderTasks(); renderMySubmissions(); }
       if (tab === 'withdraw') renderMyWithdrawals();
       if (tab === 'leaderboard') renderLeaderboard();
+      if (tab === 'profile') renderProfile();
     }
 
     // ========== DAILY REWARD ==========
@@ -1703,6 +1953,17 @@
 
     // ========== INIT ==========
     window.addEventListener('DOMContentLoaded', function() {
+      // If opened inside Telegram's Mini App, tell Telegram we're ready
+      // and expand to full height for a proper native-feeling layout.
+      if (isTelegramMiniApp()) {
+        try {
+          window.Telegram.WebApp.ready();
+          window.Telegram.WebApp.expand();
+          applyTelegramTheme();
+        } catch (e) {
+          console.error('Telegram WebApp init error:', e);
+        }
+      }
       const params = new URLSearchParams(location.search);
       const ref = params.get('ref');
       if (ref) {
