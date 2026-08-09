@@ -761,7 +761,7 @@
         <h1>PayFriend</h1>
       </div>
       <div class="topbar-right">
-        <button class="logout-btn" id="musicToggleBtn" onclick="toggleBgMusic()" title="Toggle background music" style="color:#22c55e;">🔇</button>
+        <button class="logout-btn" id="musicToggleBtn" onclick="toggleBgMusic(event)" title="Toggle background music" style="color:#22c55e;">🔇</button>
         <div class="avatar-circle" id="topbarAvatar">?</div>
         <div class="user-chip" id="userChip">@user</div>
         <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
@@ -1175,6 +1175,12 @@
       if (audio.getAttribute('src') !== BG_MUSIC_URL) {
         audio.src = BG_MUSIC_URL;
         audio.volume = BG_MUSIC_VOLUME;
+        // Surface load failures (bad URL, blocked host, network error) instead
+        // of failing silently — this is the #1 reason the toggle "does nothing".
+        audio.addEventListener('error', () => {
+          console.error('Background music failed to load:', audio.error, BG_MUSIC_URL);
+          showToast('⚠️ Music track failed to load.\nCheck BG_MUSIC_URL — the link may be broken or blocked.');
+        });
       }
       updateMusicBtn();
       if (bgMusicWantsPlay && !bgMusicStarted) {
@@ -1185,25 +1191,35 @@
 
     function tryStartBgMusicOnce() {
       if (bgMusicStarted || !bgMusicWantsPlay) return;
+      bgMusicStarted = true; // set synchronously so a near-simultaneous button
+                              // tap (see toggleBgMusic) can't also call play()
+                              // and cause the two attempts to cancel each other
       const audio = document.getElementById('bgMusic');
       audio.play().then(() => {
-        bgMusicStarted = true;
         updateMusicBtn();
-      }).catch(() => {
-        // Autoplay still blocked (rare) — the toggle button lets them start it manually.
+      }).catch((err) => {
+        console.warn('Autoplay-on-first-tap blocked, use the button instead:', err);
+        bgMusicStarted = false; // let the toggle button try again
       });
     }
 
-    function toggleBgMusic() {
+    function toggleBgMusic(evt) {
+      if (evt) evt.stopPropagation(); // prevent the page-wide "first tap" listener
+                                       // above from also firing for this same click
       if (!BG_MUSIC_URL) return;
       const audio = document.getElementById('bgMusic');
       if (audio.paused) {
+        bgMusicStarted = true;
+        bgMusicWantsPlay = true;
         audio.play().then(() => {
-          bgMusicStarted = true;
-          bgMusicWantsPlay = true;
           localStorage.setItem('bgMusicMuted', 'false');
           updateMusicBtn();
-        }).catch(() => showToast('Tap again to enable sound'));
+        }).catch((err) => {
+          console.error('bgMusic play() failed:', err);
+          bgMusicStarted = false;
+          showToast('⚠️ Could not start music: ' + (err && err.message ? err.message : err));
+          updateMusicBtn();
+        });
       } else {
         audio.pause();
         bgMusicWantsPlay = false;
