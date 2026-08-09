@@ -1004,6 +1004,14 @@
           </div>
         </div>
         <div class="card">
+          <div class="card-title">👑 Promote to Admin</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+            Type a registered user's Gmail (or any account email) to grant them admin access instantly.
+          </p>
+          <input class="input" id="promoteEmailInput" type="email" placeholder="user@gmail.com">
+          <button class="btn btn-blue" onclick="adminPromoteByEmail()">PROMOTE TO ADMIN</button>
+        </div>
+        <div class="card">
           <div class="card-title">📸 Pending Task Screenshots</div>
           <div id="adminTaskSubs"></div>
         </div>
@@ -1656,6 +1664,8 @@
           : (userData.username || 'U').charAt(0).toUpperCase();
       }
 
+      document.getElementById('adminTabBtn').classList.toggle('hidden', !userData.isAdmin);
+
       document.getElementById('balanceDisplay').textContent = '₦' + fmt(userData.balance);
       document.getElementById('earnedDisplay').textContent = '₦' + fmt(userData.earned);
       document.getElementById('refsDisplay').textContent = userData.referrals || 0;
@@ -2089,7 +2099,7 @@
       uBox.innerHTML = list.map(u => `
         <div class="user-row" style="cursor:pointer;" onclick="openAdminUserModal('${u.id}')">
           <div>
-            <div style="font-weight:700;">@${u.username} ${u.banned ? '<span class="tag rejected">BANNED</span>' : ''}</div>
+            <div style="font-weight:700;">@${u.username} ${u.banned ? '<span class="tag rejected">BANNED</span>' : ''} ${u.isAdmin ? '<span class="tag approved">ADMIN</span>' : ''}</div>
             <div style="font-size:10px;color:#666;">Bal: ₦${fmt(u.balance)} · Earned: ₦${fmt(u.earned)}</div>
           </div>
           <div style="color:#555;font-size:16px;">›</div>
@@ -2103,6 +2113,29 @@
         ? adminAllUsersData.filter(u => (u.username || '').toLowerCase().includes(q))
         : adminAllUsersData;
       renderAdminUsersList(filtered);
+    }
+
+    // ========== ADMIN: PROMOTE BY EMAIL ==========
+    async function adminPromoteByEmail() {
+      const input = document.getElementById('promoteEmailInput');
+      const email = input.value.trim().toLowerCase();
+      if (!email || !email.includes('@')) return showToast('Enter a valid email address');
+      try {
+        const snap = await db.collection('users')
+          .where('email', '==', email)
+          .limit(1)
+          .get();
+        if (snap.empty) return showToast('No account found with that email');
+        const doc = snap.docs[0];
+        const u = doc.data();
+        if (u.isAdmin) return showToast('@' + u.username + ' is already an admin');
+        await doc.ref.update({ isAdmin: true });
+        input.value = '';
+        showToast('✅ @' + u.username + ' promoted to admin!');
+        renderAdmin();
+      } catch (e) {
+        showToast('Error: ' + e.message);
+      }
     }
 
     // ========== ADMIN: USER PROFILE MODAL ==========
@@ -2131,6 +2164,8 @@
         }
         const u = doc.data();
         const banned = !!u.banned;
+        const isAdminUser = !!u.isAdmin;
+        const isSelf = currentUser && adminSelectedUserId === currentUser.uid;
         let joined = 'Recently';
         if (u.createdAt && u.createdAt.toDate) joined = u.createdAt.toDate().toLocaleDateString();
 
@@ -2139,7 +2174,10 @@
             <div class="profile-avatar" style="margin:0 auto 10px;">${(u.username || 'U').charAt(0).toUpperCase()}</div>
             <div class="profile-name">@${u.username}</div>
             <div class="profile-username">${u.email || ''}</div>
-            ${banned ? '<div style="margin-top:8px;"><span class="tag rejected">BANNED</span></div>' : ''}
+            <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;">
+              ${banned ? '<span class="tag rejected">BANNED</span>' : ''}
+              ${isAdminUser ? '<span class="tag approved">ADMIN</span>' : ''}
+            </div>
           </div>
           <div class="profile-row"><div class="profile-row-label">Balance</div><div class="profile-row-value">₦${fmt(u.balance)}</div></div>
           <div class="profile-row"><div class="profile-row-label">Total Earned</div><div class="profile-row-value">₦${fmt(u.earned)}</div></div>
@@ -2153,12 +2191,28 @@
               <button class="btn btn-green" style="margin-bottom:0;" onclick="adminAdjustBalance(true)">+ ADD MONEY</button>
               <button class="btn btn-red" style="margin-bottom:0;" onclick="adminAdjustBalance(false)">− DEDUCT MONEY</button>
             </div>
+            <button class="btn ${isAdminUser ? 'btn-outline' : 'btn-blue'}" ${isSelf ? 'disabled title="You cannot change your own admin status"' : ''} onclick="adminToggleAdmin(${isAdminUser})">${isAdminUser ? '👑 REMOVE ADMIN' : '👑 MAKE ADMIN'}</button>
             ${!banned ? `<input class="input" id="banReasonInput" placeholder="Ban reason (optional, shown to user)">` : ''}
             <button class="btn ${banned ? 'btn-green' : 'btn-gold'}" onclick="adminToggleBan(${banned})">${banned ? '✅ UNBAN USER' : '🚫 BAN USER'}</button>
           </div>
         `;
       } catch (e) {
         body.innerHTML = '<p style="color:#ef4444;">Error loading user</p>';
+      }
+    }
+
+    async function adminToggleAdmin(currentlyAdmin) {
+      if (!adminSelectedUserId) return;
+      if (currentUser && adminSelectedUserId === currentUser.uid) {
+        return showToast('You cannot change your own admin status');
+      }
+      try {
+        await db.collection('users').doc(adminSelectedUserId).update({ isAdmin: !currentlyAdmin });
+        showToast(!currentlyAdmin ? '👑 User promoted to admin' : '✅ Admin access removed');
+        await renderAdminUserModal();
+        renderAdmin();
+      } catch (e) {
+        showToast('Error: ' + e.message);
       }
     }
 
