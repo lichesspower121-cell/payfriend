@@ -1951,6 +1951,27 @@
       renderAdmin();
     }
 
+    // Inside Telegram's Mini App WebView, a normal <a target="_blank"> link
+    // often doesn't open a real new tab — it can hijack the current mini
+    // app view and navigate away from PayFriend entirely. Telegram provides
+    // its own openLink() method specifically to avoid this. This listener
+    // catches clicks on any link we render (task links, footer links,
+    // auto-linkified URLs in descriptions) and routes them through
+    // Telegram's method instead, so the mini app stays open.
+    document.addEventListener('click', function(e) {
+      if (!isTelegramMiniApp()) return;
+      const link = e.target.closest('a[href]');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#')) return;
+      e.preventDefault();
+      try {
+        window.Telegram.WebApp.openLink(href, { try_instant_view: false });
+      } catch (err) {
+        console.error('Telegram openLink failed:', err);
+      }
+    });
+
     // ========== INIT ==========
     window.addEventListener('DOMContentLoaded', function() {
       // If opened inside Telegram's Mini App, tell Telegram we're ready
