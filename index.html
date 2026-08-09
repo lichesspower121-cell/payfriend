@@ -761,6 +761,7 @@
         <h1>PayFriend</h1>
       </div>
       <div class="topbar-right">
+        <button class="logout-btn" id="musicToggleBtn" onclick="toggleBgMusic()" title="Toggle background music" style="color:#22c55e;">🔇</button>
         <div class="avatar-circle" id="topbarAvatar">?</div>
         <div class="user-chip" id="userChip">@user</div>
         <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
@@ -1036,7 +1037,8 @@
 
       <div class="footer">
         POWERED BY <a href="https://t.me/maxxking12" target="_blank">MAX DEV</a> ·
-        <a href="https://t.me/payfriend1" target="_blank">Support Group</a>
+        <a href="https://t.me/payfriend1" target="_blank">Support Group</a><br>
+        Music: "Smile Drone" by Adrian Diaz (CC BY-SA 4.0)
       </div>
     </div>
   </div>
@@ -1079,6 +1081,9 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Background music. Loops quietly while the user is inside the app. -->
+  <audio id="bgMusic" loop preload="none"></audio>
+
   <script>
     // ========== FIREBASE CONFIG ==========
     const firebaseConfig = {
@@ -1100,6 +1105,13 @@
     const REF_REWARD = 15;
     const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
     const ADMIN_USERNAMES = ["admin"];
+
+    // ===== BACKGROUND MUSIC CONFIG =====
+    // Paste a direct link to your .mp3 file here (must end in a playable
+    // audio URL, e.g. hosted on your own Firebase Storage bucket, GitHub,
+    // or any CDN that allows hotlinking). Leave empty to disable music.
+    const BG_MUSIC_URL = "https://archive.org/download/100_free_royalty_background_music_tracks/SmileDrone.mp3"; // <-- change this any time to swap tracks
+    const BG_MUSIC_VOLUME = 0.35;
     const AD_REWARD = 3;
     const MAX_ADS_PER_DAY = 5;
     const AD_WAIT_SECONDS = 20; // forces users to actually wait before crediting
@@ -1143,6 +1155,68 @@
     // reset the daily ad-watch counter without needing a 24h rolling timer.
     function todayDateString() {
       return new Date().toISOString().slice(0, 10);
+    }
+
+    // ========== BACKGROUND MUSIC ==========
+    // Browsers block audio-with-sound from autoplaying before the user has
+    // interacted with the page at all. So: we wire the track up as soon as
+    // someone logs in, then start it on the very first tap/click anywhere
+    // (which counts as "interacted") unless they'd previously muted it.
+    let bgMusicStarted = false;
+    let bgMusicWantsPlay = localStorage.getItem('bgMusicMuted') !== 'true';
+
+    function setupBgMusic() {
+      if (!BG_MUSIC_URL) {
+        const btn = document.getElementById('musicToggleBtn');
+        if (btn) btn.style.display = 'none';
+        return;
+      }
+      const audio = document.getElementById('bgMusic');
+      if (audio.getAttribute('src') !== BG_MUSIC_URL) {
+        audio.src = BG_MUSIC_URL;
+        audio.volume = BG_MUSIC_VOLUME;
+      }
+      updateMusicBtn();
+      if (bgMusicWantsPlay && !bgMusicStarted) {
+        document.addEventListener('click', tryStartBgMusicOnce, { once: true });
+        document.addEventListener('touchend', tryStartBgMusicOnce, { once: true });
+      }
+    }
+
+    function tryStartBgMusicOnce() {
+      if (bgMusicStarted || !bgMusicWantsPlay) return;
+      const audio = document.getElementById('bgMusic');
+      audio.play().then(() => {
+        bgMusicStarted = true;
+        updateMusicBtn();
+      }).catch(() => {
+        // Autoplay still blocked (rare) — the toggle button lets them start it manually.
+      });
+    }
+
+    function toggleBgMusic() {
+      if (!BG_MUSIC_URL) return;
+      const audio = document.getElementById('bgMusic');
+      if (audio.paused) {
+        audio.play().then(() => {
+          bgMusicStarted = true;
+          bgMusicWantsPlay = true;
+          localStorage.setItem('bgMusicMuted', 'false');
+          updateMusicBtn();
+        }).catch(() => showToast('Tap again to enable sound'));
+      } else {
+        audio.pause();
+        bgMusicWantsPlay = false;
+        localStorage.setItem('bgMusicMuted', 'true');
+        updateMusicBtn();
+      }
+    }
+
+    function updateMusicBtn() {
+      const btn = document.getElementById('musicToggleBtn');
+      if (!btn) return;
+      const audio = document.getElementById('bgMusic');
+      btn.textContent = (audio && !audio.paused) ? '🔊' : '🔇';
     }
 
     // ========== AUTH UI ==========
@@ -1513,6 +1587,9 @@
     }
 
     function doLogout() {
+      const audio = document.getElementById('bgMusic');
+      if (audio) audio.pause();
+      bgMusicStarted = false;
       auth.signOut();
     }
 
@@ -1581,6 +1658,7 @@
       showWelcomeBanner('👋 Welcome back, @' + userData.username + '!');
       loadPopunderScriptIfNeeded();
       loadNativeBannerScriptIfNeeded();
+      setupBgMusic();
       refreshUI();
       switchTab('home');
     }
