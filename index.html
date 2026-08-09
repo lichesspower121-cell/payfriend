@@ -650,6 +650,42 @@
     .quick-tile.q-refer .qi { background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.4); }
     .quick-tile.q-rank .qi { background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.4); }
     .quick-tile.q-withdraw .qi { background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.4); }
+
+    /* ===== Banned / suspended screen ===== */
+    .banned-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #200606, #050505 65%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 600;
+    }
+    .banned-screen.show { display: flex; }
+    .banned-card { max-width: 380px; width: 100%; text-align: center; }
+    .banned-icon {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.45);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 18px;
+    }
+    .banned-card h2 { font-size: 20px; font-weight: 900; color: #ef4444; margin-bottom: 10px; }
+    .banned-card p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+    .banned-reason {
+      background: #121212;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #ddd;
+      margin: 14px 0;
+      text-align: left;
+      font-family: 'JetBrains Mono', monospace;
+    }
   </style>
 </head>
 <body>
@@ -657,6 +693,19 @@
 
   <!-- Shown briefly while we check for a Google redirect result on page load -->
   <div class="full-loading" id="redirectLoading">Signing you in...</div>
+
+  <!-- Shown when a banned user tries to log in, or gets banned mid-session -->
+  <div class="banned-screen" id="bannedScreen">
+    <div class="banned-card">
+      <div class="banned-icon">🚫</div>
+      <h2>Account Suspended</h2>
+      <p>Your PayFriend account has been banned by an admin. You can no longer do tasks, refer friends, or withdraw earnings.</p>
+      <div class="banned-reason hidden" id="bannedReasonBox"></div>
+      <p>If you think this is a mistake, contact support below.</p>
+      <a class="btn btn-outline" href="https://t.me/payfriend1" target="_blank" style="display:block;text-decoration:none;">💬 CONTACT SUPPORT</a>
+      <button class="btn btn-outline" onclick="closeBannedScreen()">BACK TO LOGIN</button>
+    </div>
+  </div>
 
   <!-- AUTH -->
   <div class="auth-wrap hidden" id="authWrap">
@@ -1055,6 +1104,7 @@
     let popunderScriptLoaded = false;
     let nativeBannerScriptLoaded = false;
     let adminAllUsersData = [];
+    let justBanned = false;
 
     // Loads the Adsterra Popunder script on demand, only once a user is
     // actually inside the app. This keeps it away from the login/register
@@ -1100,6 +1150,28 @@
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('loginError').style.display = 'none';
       document.getElementById('regError').style.display = 'none';
+    }
+
+    function showBannedScreen(reason) {
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('authWrap').style.display = 'none';
+      document.getElementById('authWrap').classList.add('hidden');
+      document.getElementById('redirectLoading').style.display = 'none';
+      const reasonBox = document.getElementById('bannedReasonBox');
+      if (reason) {
+        reasonBox.textContent = 'Reason: ' + reason;
+        reasonBox.classList.remove('hidden');
+      } else {
+        reasonBox.classList.add('hidden');
+      }
+      document.getElementById('bannedScreen').classList.add('show');
+    }
+
+    function closeBannedScreen() {
+      document.getElementById('bannedScreen').classList.remove('show');
+      document.getElementById('authWrap').classList.remove('hidden');
+      document.getElementById('authWrap').style.display = 'flex';
+      showLogin();
     }
 
     function resetAuthButtons() {
@@ -1448,8 +1520,8 @@
               userData.isAdmin = true;
             }
             if (userData.banned) {
-              resetAuthButtons();
-              showError(document.getElementById('loginError'), 'Your account has been banned. Contact support.');
+              justBanned = true;
+              showBannedScreen(userData.bannedReason);
               await auth.signOut();
               return;
             }
@@ -1477,6 +1549,11 @@
         currentUser = null;
         userData = null;
         document.getElementById('app').style.display = 'none';
+        if (justBanned) {
+          justBanned = false;
+          resetAuthButtons();
+          return;
+        }
         if (redirectCheckDone) {
           document.getElementById('authWrap').classList.remove('hidden');
           document.getElementById('authWrap').style.display = 'flex';
@@ -1563,7 +1640,8 @@
         userData.isAdmin = true;
       }
       if (userData.banned) {
-        showToast('🚫 Your account has been banned.');
+        justBanned = true;
+        showBannedScreen(userData.bannedReason);
         await auth.signOut();
         return;
       }
@@ -2068,12 +2146,14 @@
           <div class="profile-row"><div class="profile-row-label">Referrals</div><div class="profile-row-value">${u.referrals || 0}</div></div>
           <div class="profile-row"><div class="profile-row-label">Tasks Done</div><div class="profile-row-value">${(u.tasksDone || []).length}</div></div>
           <div class="profile-row"><div class="profile-row-label">Joined</div><div class="profile-row-value">${joined}</div></div>
+          ${banned && u.bannedReason ? `<div class="profile-row"><div class="profile-row-label">Ban Reason</div><div class="profile-row-value" style="text-align:right;max-width:60%;">${u.bannedReason}</div></div>` : ''}
           <div style="margin-top:16px;">
             <input class="input" id="adjAmount" type="number" placeholder="Amount (e.g. 500)">
             <div style="display:flex;gap:8px;margin-bottom:8px;">
               <button class="btn btn-green" style="margin-bottom:0;" onclick="adminAdjustBalance(true)">+ ADD MONEY</button>
               <button class="btn btn-red" style="margin-bottom:0;" onclick="adminAdjustBalance(false)">− DEDUCT MONEY</button>
             </div>
+            ${!banned ? `<input class="input" id="banReasonInput" placeholder="Ban reason (optional, shown to user)">` : ''}
             <button class="btn ${banned ? 'btn-green' : 'btn-gold'}" onclick="adminToggleBan(${banned})">${banned ? '✅ UNBAN USER' : '🚫 BAN USER'}</button>
           </div>
         `;
@@ -2104,7 +2184,14 @@
     async function adminToggleBan(currentlyBanned) {
       if (!adminSelectedUserId) return;
       try {
-        await db.collection('users').doc(adminSelectedUserId).update({ banned: !currentlyBanned });
+        const update = { banned: !currentlyBanned };
+        if (!currentlyBanned) {
+          const reasonInput = document.getElementById('banReasonInput');
+          update.bannedReason = (reasonInput && reasonInput.value.trim()) ? reasonInput.value.trim() : null;
+        } else {
+          update.bannedReason = null;
+        }
+        await db.collection('users').doc(adminSelectedUserId).update(update);
         showToast(!currentlyBanned ? '🚫 User banned' : '✅ User unbanned');
         await renderAdminUserModal();
         renderAdmin();
