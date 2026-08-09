@@ -603,6 +603,7 @@
         <div class="card">
           <div class="card-title">📺 Watch Ads & Earn</div>
           <p style="font-size:13px;color:var(--muted);margin-bottom:6px;">Earn ₦3 per ad · Up to 5 per day</p>
+          <p style="font-size:11px;color:#f59e0b;margin-bottom:8px;">⚠️ A new tab will open — that's the ad. Just switch back here after a few seconds, your reward credits automatically.</p>
           <p style="font-size:11px;color:#666;margin-bottom:12px;" id="adWatchCount">0/5 watched today</p>
           <button class="btn btn-blue" id="watchAdBtn" onclick="startWatchAd()">WATCH AD</button>
         </div>
@@ -1250,6 +1251,7 @@
       // Clicking this button is itself the "click" Adsterra's Popunder
       // script listens for — it will open the ad automatically. We don't
       // need to call anything else to trigger it.
+      showToast('📺 Ad opening in a new tab.\nSwitch back here after a few seconds!');
       let secondsLeft = AD_WAIT_SECONDS;
       btn.disabled = true;
       btn.textContent = `AD PLAYING... ${secondsLeft}s`;
