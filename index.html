@@ -13,9 +13,6 @@
 
   <!-- Adsterra Native Banner -->
   <script async="async" data-cfasync="false" src="https://pl30759246.effectivecpmnetwork.com/ebafff99d050c06bcdba55e8ca1154ef/invoke.js"></script>
-
-  <!-- Adsterra Popunder (fires on user click, used by the Watch Ad button) -->
-  <script src="https://pl30759301.effectivecpmnetwork.com/91/f7/9a/91f79a23f567d076cec276e70d8d4608.js"></script>
   <style>
     :root {
       --bg: #050505;
@@ -734,6 +731,7 @@
           <input class="input" id="newTaskReward" type="number" placeholder="Reward amount (e.g. 50)">
           <input class="input" id="newTaskTitle" placeholder="Task title">
           <input class="input" id="newTaskDesc" placeholder="Task description">
+          <input class="input" id="newTaskLink" type="url" placeholder="Link (optional, e.g. https://...)">
           <button class="btn btn-blue" onclick="adminCreateTask()">CREATE TASK</button>
         </div>
       </div>
@@ -773,6 +771,11 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <!-- Adsterra Popunder (fires on user click, used by the Watch Ad button) -->
+  <!-- Loaded here, right before </body>, so the full page DOM exists before
+       the script runs and tries to attach itself. -->
+  <script src="https://pl30759301.effectivecpmnetwork.com/91/f7/9a/91f79a23f567d076cec276e70d8d4608.js"></script>
 
   <script>
     // ========== FIREBASE CONFIG ==========
@@ -1182,6 +1185,16 @@
       return Number(n || 0).toLocaleString();
     }
 
+    // Turns any raw http(s) URLs typed into plain text into clickable links.
+    // Used for task descriptions that were written with a link pasted
+    // directly into the text, rather than using the dedicated Link field.
+    function linkify(text) {
+      const urlRegex = /(https?:\/\/[^\s<]+)/g;
+      return text.replace(urlRegex, url =>
+        `<a href="${url}" target="_blank" rel="noopener" style="color:#3b82f6;word-break:break-all;">${url}</a>`
+      );
+    }
+
     async function refreshUI() {
       if (!userData) return;
       const doc = await db.collection('users').doc(currentUser.uid).get();
@@ -1353,7 +1366,8 @@
                 <div class="task-title">${t.title}</div>
                 <div class="task-reward">+₦${t.reward}</div>
               </div>
-              <div class="task-desc">${t.desc || ''}</div>
+              <div class="task-desc">${linkify(t.desc || '')}</div>
+              ${t.link ? `<a href="${t.link}" target="_blank" rel="noopener" style="display:block;text-align:center;background:#151515;border:1px solid #2a2a2a;color:#3b82f6;border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px;font-weight:700;text-decoration:none;font-family:'JetBrains Mono',monospace;">🔗 OPEN LINK</a>` : ''}
               ${btnHtml}
             </div>
           `;
@@ -1669,17 +1683,20 @@
       const reward = parseFloat(document.getElementById('newTaskReward').value);
       const title = document.getElementById('newTaskTitle').value.trim();
       const desc = document.getElementById('newTaskDesc').value.trim();
+      const link = document.getElementById('newTaskLink').value.trim();
       if (!reward || !title) return showToast('Fill reward and title');
       await db.collection('tasks').add({
         title,
         desc: desc || title,
         reward,
+        link: link || null,
         active: true,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       document.getElementById('newTaskReward').value = '';
       document.getElementById('newTaskTitle').value = '';
       document.getElementById('newTaskDesc').value = '';
+      document.getElementById('newTaskLink').value = '';
       showToast('Task created!');
       renderAdmin();
     }
